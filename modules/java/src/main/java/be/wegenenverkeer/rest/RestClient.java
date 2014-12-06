@@ -1,12 +1,14 @@
 package be.wegenenverkeer.rest;
 
-import com.ning.http.client.*;
-import com.ning.http.client.date.TimeConverter;
-import com.ning.http.client.filter.IOExceptionFilter;
-import com.ning.http.client.filter.RequestFilter;
-import com.ning.http.client.filter.ResponseFilter;
-
+import com.ning.http.client.AsyncCompletionHandler;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.AsyncHttpClientConfig;
+import com.ning.http.client.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.exceptions.Exceptions;
+import rx.exceptions.OnErrorFailedException;
 import rx.subjects.AsyncSubject;
 
 import javax.net.ssl.HostnameVerifier;
@@ -14,11 +16,15 @@ import javax.net.ssl.SSLContext;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
+import static be.wegenenverkeer.rest.ServerResponse.wrap;
+
 /**
  * A REST API Client
  * Created by Karel Maesen, Geovise BVBA on 05/12/14.
  */
 public class RestClient {
+
+    final private static Logger logger = LoggerFactory.getLogger(RestClient.class);
 
     final private AsyncHttpClient innerClient;
     final private RestClientConfig config;
@@ -30,45 +36,32 @@ public class RestClient {
     }
 
 
-    public <F> Observable<F> GET(String path, Function<Response, F> handler) {
+    public <F> Observable<F> sendRequest(ClientRequest request, Function<ServerResponse, F> handler) {
+        logger.info("Sending Request: " + request.toString());
         AsyncSubject<F> subject = AsyncSubject.create();
-        innerClient
-                .prepareGet(toFullPath(path))
-                .addHeader("Accept", config.getAccept())
-                .execute(new AsyncCompletionHandlerWrapper<>(subject, handler));
+        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, handler));
         return subject;
     }
 
-
-    private String toFullPath(String path) {
-        //TODO add testing to see if this is a genuine URL
-        String p = chopFirstForwardSlash(path);
-        return config.getBaseUrl() + "/" + p;
+    public String getBaseUrl() {
+        return this.config.getBaseUrl();
     }
 
-    private static String chopLastForwardSlash(String url) {
-        if (url.charAt(url.length() - 1) == '/') {
-            url = url.substring(0, url.length() - 1);
-        }
-        return url;
+    public String getAccept() {
+        return config.getAccept();
     }
 
-
-    private static String chopFirstForwardSlash(String url) {
-        if (url.charAt(0) == '/') {
-            url = url.substring(1, url.length());
-        }
-        return url;
+    public ClientRequestBuilder requestBuilder() {
+        return new ClientRequestBuilder(this);
     }
-
 
     class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
 
         final private AsyncSubject<? super F> subject;
-        final private Function<Response, F> handler;
+        final private Function<ServerResponse, F> handler;
 
 
-        AsyncCompletionHandlerWrapper(AsyncSubject<? super F> subject, Function<Response, F> handler) {
+        AsyncCompletionHandlerWrapper(AsyncSubject<? super F> subject, Function<ServerResponse, F> handler) {
             this.subject = subject;
             this.handler = handler;
         }
@@ -76,20 +69,28 @@ public class RestClient {
         @Override
         public F onCompleted(Response response) throws Exception {
             F value = null;
-            int status = response.getStatusCode();
             try {
-                //Everything above
-                if (status < 400) {
-                    value = handler.apply(response);
-                    subject.onNext(value);
-                    subject.onCompleted();
-                } else if (status >= 400 && status < 500) {
-                    subject.onError(new HttpClientError(status, response.getStatusText() + "\n" + response.getResponseBody()) );
-                } else {
-                    subject.onError(new HttpServerError(status, response.getStatusText() + "\n" + response.getResponseBody()) );
+                try {
+                    int status = response.getStatusCode();
+                    //Everything above
+                    if (status < 400) {
+                        value = handler.apply(wrap(response));
+                        subject.onNext(value);
+                        subject.onCompleted();
+                    } else if (status >= 400 && status < 500) {
+                        subject.onError(new HttpClientError(status, response.getStatusText() + "\n" + response.getResponseBody()));
+                    } else {
+                        subject.onError(new HttpServerError(status, response.getStatusText() + "\n" + response.getResponseBody()));
+                    }
+                } catch (Throwable t) {
+                    //TODO Should this logging not be done in the global onError handler? See Class RxJavaErrorHandler
+                    if (t instanceof OnErrorFailedException) {
+                        logger.error("onError handler failed: " + t.getMessage(), t);
+                    }
+                    subject.onError(t);
                 }
-            } catch (Throwable t) {
-                subject.onError(t);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             return value;
         }
@@ -142,158 +143,164 @@ public class RestClient {
         }
 
         public RestClient.Builder setBaseUrl(String url) {
-            url = chopLastForwardSlash(url);
             rcConfig.setBaseUrl(url);
             return this;
         }
 
+
+        /**
+         * Set the maximum number of connections an {@link com.ning.http.client.AsyncHttpClient} can handle.
+         *
+         * @param maxConnections the maximum number of connections an {@link com.ning.http.client.AsyncHttpClient} can handle.
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
         public RestClient.Builder setMaxConnections(int maxConnections) {
             configBuilder.setMaxConnections(maxConnections);
             return this;
         }
 
-        public RestClient.Builder removeResponseFilter(ResponseFilter responseFilter) {
-            configBuilder.removeResponseFilter(responseFilter);
+        /**
+         * Set true if connection can be pooled by a ChannelPool. Default is true.
+         *
+         * @param allowPoolingConnections true if connection can be pooled by a ChannelPool
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setAllowPoolingConnections(boolean allowPoolingConnections) {
+            configBuilder.setAllowPoolingConnections(allowPoolingConnections);
             return this;
         }
 
-        public RestClient.Builder setConnectionTTL(int connectionTTL) {
-            configBuilder.setConnectionTTL(connectionTTL);
+        /**
+         * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can wait when connecting to a remote host
+         *
+         * @param connectTimeOut the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can wait when connecting to a remote host
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setConnectTimeout(int connectTimeOut) {
+            configBuilder.setConnectTimeout(connectTimeOut);
             return this;
         }
 
+//        /**
+//         * Set the {@link com.ning.http.client.Realm}  that will be used for all requests.
+//         *
+//         * @param realm the {@link com.ning.http.client.Realm}
+//         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+//         */
+//        public RestClient.Builder setRealm(Realm realm) {
+//            configBuilder.setRealm(realm);
+//            return this;
+//        }
+
+        /**
+         * Set the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
+         * asynchronous response.
+         *
+         * @param applicationThreadPool the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
+         *                              asynchronous response.
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
         public RestClient.Builder setExecutorService(ExecutorService applicationThreadPool) {
             configBuilder.setExecutorService(applicationThreadPool);
             return this;
         }
 
-        public RestClient.Builder setUseProxyProperties(boolean useProxyProperties) {
-            configBuilder.setUseProxyProperties(useProxyProperties);
+        /**
+         * Set the maximum time in millisecond an {@link com.ning.http.client.ws.WebSocket} can stay idle.
+         *
+         * @param webSocketTimeout the maximum time in millisecond an {@link com.ning.http.client.ws.WebSocket} can stay idle.
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setWebSocketTimeout(int webSocketTimeout) {
+            configBuilder.setWebSocketTimeout(webSocketTimeout);
             return this;
         }
 
-        public RestClient.Builder setProxyServerSelector(ProxyServerSelector proxyServerSelector) {
-            configBuilder.setProxyServerSelector(proxyServerSelector);
-            return this;
-        }
-
-        public RestClient.Builder setDisableUrlEncodingForBoundedRequests(boolean disableUrlEncodingForBoundedRequests) {
-            configBuilder.setDisableUrlEncodingForBoundedRequests(disableUrlEncodingForBoundedRequests);
-            return this;
-        }
-
-        public RestClient.Builder setUserAgent(String userAgent) {
-            configBuilder.setUserAgent(userAgent);
-            return this;
-        }
-
-        public RestClient.Builder setIOThreadMultiplier(int multiplier) {
-            configBuilder.setIOThreadMultiplier(multiplier);
-            return this;
-        }
-
-        public RestClient.Builder setPooledConnectionIdleTimeout(int pooledConnectionIdleTimeout) {
-            configBuilder.setPooledConnectionIdleTimeout(pooledConnectionIdleTimeout);
-            return this;
-        }
-
-        public RestClient.Builder addRequestFilter(RequestFilter requestFilter) {
-            configBuilder.addRequestFilter(requestFilter);
-            return this;
-        }
-
-        public RestClient.Builder setHostnameVerifier(HostnameVerifier hostnameVerifier) {
-            configBuilder.setHostnameVerifier(hostnameVerifier);
-            return this;
-        }
-
-        public RestClient.Builder setAcceptAnyCertificate(boolean acceptAnyCertificate) {
-            configBuilder.setAcceptAnyCertificate(acceptAnyCertificate);
-            return this;
-        }
-
-        public RestClient.Builder removeIOExceptionFilter(IOExceptionFilter ioExceptionFilter) {
-            configBuilder.removeIOExceptionFilter(ioExceptionFilter);
-            return this;
-        }
-
+        /**
+         * Set the number of time a request will be retried when an {@link java.io.IOException} occurs because of a Network exception.
+         *
+         * @param maxRequestRetry the number of time a request will be retried
+         * @return this
+         */
         public RestClient.Builder setMaxRequestRetry(int maxRequestRetry) {
             configBuilder.setMaxRequestRetry(maxRequestRetry);
             return this;
         }
 
-        public RestClient.Builder setAllowPoolingSslConnections(boolean allowPoolingSslConnections) {
-            configBuilder.setAllowPoolingSslConnections(allowPoolingSslConnections);
+//        public RestClient.Builder setTimeConverter(TimeConverter timeConverter) {
+//            configBuilder.setTimeConverter(timeConverter);
+//            return this;
+//        }
+
+        /**
+         * Set the {@link javax.net.ssl.HostnameVerifier}
+         *
+         * @param hostnameVerifier {@link javax.net.ssl.HostnameVerifier}
+         * @return this
+         */
+        public RestClient.Builder setHostnameVerifier(HostnameVerifier hostnameVerifier) {
+            configBuilder.setHostnameVerifier(hostnameVerifier);
             return this;
         }
 
-        public RestClient.Builder setMaxRedirects(int maxRedirects) {
-            configBuilder.setMaxRedirects(maxRedirects);
-            return this;
-        }
+//        /**
+//         * Set an instance of {@link com.ning.http.client.ProxyServerSelector} used by an {@link com.ning.http.client.AsyncHttpClient}
+//         *
+//         * @param proxyServerSelector instance of {@link com.ning.http.client.ProxyServerSelector}
+//         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+//         */
+//        public RestClient.Builder setProxyServerSelector(ProxyServerSelector proxyServerSelector) {
+//            configBuilder.setProxyServerSelector(proxyServerSelector);
+//            return this;
+//        }
+
+//        /**
+//         * Remove an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeRequest(com.ning.http.client.Request)}
+//         *
+//         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
+//         * @return this
+//         */
+//        public RestClient.Builder removeRequestFilter(RequestFilter requestFilter) {
+//            configBuilder.removeRequestFilter(requestFilter);
+//            return this;
+//        }
 
         public RestClient.Builder setEnabledProtocols(String[] enabledProtocols) {
             configBuilder.setEnabledProtocols(enabledProtocols);
             return this;
         }
 
-        public RestClient.Builder setCompressionEnforced(boolean compressionEnforced) {
-            configBuilder.setCompressionEnforced(compressionEnforced);
-            return this;
-        }
+//        /**
+//         * Set an instance of {@link com.ning.http.client.ProxyServer} used by an {@link com.ning.http.client.AsyncHttpClient}
+//         *
+//         * @param proxyServer instance of {@link com.ning.http.client.ProxyServer}
+//         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+//         */
+//        public RestClient.Builder setProxyServer(ProxyServer proxyServer) {
+//            configBuilder.setProxyServer(proxyServer);
+//            return this;
+//        }
 
-        public RestClient.Builder addResponseFilter(ResponseFilter responseFilter) {
-            configBuilder.addResponseFilter(responseFilter);
-            return this;
-        }
-
-        public RestClient.Builder setFollowRedirect(boolean followRedirect) {
-            configBuilder.setFollowRedirect(followRedirect);
-            return this;
-        }
-
-        public RestClient.Builder setConnectTimeout(int connectTimeOut) {
-            configBuilder.setConnectTimeout(connectTimeOut);
-            return this;
-        }
-
-        public RestClient.Builder setStrict302Handling(boolean strict302Handling) {
-            configBuilder.setStrict302Handling(strict302Handling);
-            return this;
-        }
-
-        public RestClient.Builder setRequestTimeout(int requestTimeout) {
-            configBuilder.setRequestTimeout(requestTimeout);
-            return this;
-        }
-
+        /**
+         * Configures this AHC instance to use relative URIs instead of absolute ones when talking with a SSL proxy or WebSocket proxy.
+         *
+         * @param useRelativeURIsWithConnectProxies
+         * @return this
+         * @since 1.8.13
+         */
         public RestClient.Builder setUseRelativeURIsWithConnectProxies(boolean useRelativeURIsWithConnectProxies) {
             configBuilder.setUseRelativeURIsWithConnectProxies(useRelativeURIsWithConnectProxies);
             return this;
         }
 
-        public RestClient.Builder setTimeConverter(TimeConverter timeConverter) {
-            configBuilder.setTimeConverter(timeConverter);
-            return this;
-        }
-
-        public RestClient.Builder addIOExceptionFilter(IOExceptionFilter ioExceptionFilter) {
-            configBuilder.addIOExceptionFilter(ioExceptionFilter);
-            return this;
-        }
-
-        public RestClient.Builder setWebSocketTimeout(int webSocketTimeout) {
-            configBuilder.setWebSocketTimeout(webSocketTimeout);
-            return this;
-        }
-
-        public RestClient.Builder setProxyServer(ProxyServer proxyServer) {
-            configBuilder.setProxyServer(proxyServer);
-            return this;
-        }
-
-        public RestClient.Builder setRealm(Realm realm) {
-            configBuilder.setRealm(realm);
+        /**
+         * Set the maximum number of connections per hosts an {@link com.ning.http.client.AsyncHttpClient} can handle.
+         *
+         * @param maxConnectionsPerHost the maximum number of connections per host an {@link com.ning.http.client.AsyncHttpClient} can handle.
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setMaxConnectionsPerHost(int maxConnectionsPerHost) {
+            configBuilder.setMaxConnectionsPerHost(maxConnectionsPerHost);
             return this;
         }
 
@@ -302,41 +309,244 @@ public class RestClient {
             return this;
         }
 
+        /**
+         * Return true is if connections pooling is enabled.
+         *
+         * @param allowPoolingSslConnections true if enabled
+         * @return this
+         */
+        public RestClient.Builder setAllowPoolingSslConnections(boolean allowPoolingSslConnections) {
+            configBuilder.setAllowPoolingSslConnections(allowPoolingSslConnections);
+            return this;
+        }
+
+//        /**
+//         * Remove an {@link com.ning.http.client.filter.ResponseFilter} that will be invoked as soon as the response is
+//         * received, and before {@link com.ning.http.client.AsyncHandler#onStatusReceived(com.ning.http.client.HttpResponseStatus)}.
+//         *
+//         * @param responseFilter an {@link com.ning.http.client.filter.ResponseFilter}
+//         * @return this
+//         */
+//        public RestClient.Builder removeResponseFilter(ResponseFilter responseFilter) {
+//            configBuilder.removeResponseFilter(responseFilter);
+//            return this;
+//        }
+
+        /**
+         * Sets whether AHC should use the default http.proxy* system properties
+         * to obtain proxy information.  This differs from {@link #setUseProxySelector(boolean)}
+         * in that AsyncHttpClient will use its own logic to handle the system properties,
+         * potentially supporting other protocols that the the JDK ProxySelector doesn't.
+         * <p>
+         * If useProxyProperties is set to <code>true</code> but {@link #setUseProxySelector(boolean)}
+         * was also set to true, the latter is preferred.
+         * <p>
+         * See http://download.oracle.com/javase/1.4.2/docs/guide/net/properties.html
+         *
+         * @param useProxyProperties
+         */
+        public RestClient.Builder setUseProxyProperties(boolean useProxyProperties) {
+            configBuilder.setUseProxyProperties(useProxyProperties);
+            return this;
+        }
+
+        /**
+         * Sets whether AHC should use the default JDK ProxySelector to select a proxy server.
+         * <p>
+         * See http://docs.oracle.com/javase/7/docs/api/java/net/ProxySelector.html
+         *
+         * @param useProxySelector
+         */
         public RestClient.Builder setUseProxySelector(boolean useProxySelector) {
             configBuilder.setUseProxySelector(useProxySelector);
             return this;
         }
 
-        public RestClient.Builder setSSLContext(SSLContext sslContext) {
-            configBuilder.setSSLContext(sslContext);
+//        /**
+//         * Add an {@link com.ning.http.client.filter.ResponseFilter} that will be invoked as soon as the response is
+//         * received, and before {@link com.ning.http.client.AsyncHandler#onStatusReceived(com.ning.http.client.HttpResponseStatus)}.
+//         *
+//         * @param responseFilter an {@link com.ning.http.client.filter.ResponseFilter}
+//         * @return this
+//         */
+//        public RestClient.Builder addResponseFilter(ResponseFilter responseFilter) {
+//            configBuilder.addResponseFilter(responseFilter);
+//            return this;
+//        }
+
+        /**
+         * Set the maximum number of HTTP redirect
+         *
+         * @param maxRedirects the maximum number of HTTP redirect
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setMaxRedirects(int maxRedirects) {
+            configBuilder.setMaxRedirects(maxRedirects);
             return this;
         }
 
-        public RestClient.Builder setMaxConnectionsPerHost(int maxConnectionsPerHost) {
-            configBuilder.setMaxConnectionsPerHost(maxConnectionsPerHost);
+        public RestClient.Builder setAcceptAnyCertificate(boolean acceptAnyCertificate) {
+            configBuilder.setAcceptAnyCertificate(acceptAnyCertificate);
             return this;
         }
 
-        public RestClient.Builder setAllowPoolingConnections(boolean allowPoolingConnections) {
-            configBuilder.setAllowPoolingConnections(allowPoolingConnections);
+        public RestClient.Builder setIOThreadMultiplier(int multiplier) {
+            configBuilder.setIOThreadMultiplier(multiplier);
             return this;
         }
 
+        /**
+         * Configures this AHC instance to be strict in it's handling of 302 redirects
+         * in a POST/Redirect/GET situation.
+         *
+         * @param strict302Handling strict handling
+         * @return this
+         * @since 1.7.2
+         */
+        public RestClient.Builder setStrict302Handling(boolean strict302Handling) {
+            configBuilder.setStrict302Handling(strict302Handling);
+            return this;
+        }
+
+        /**
+         * Set the maximum time in millisecond connection can be added to the pool for further reuse
+         *
+         * @param connectionTTL the maximum time in millisecond connection can be added to the pool for further reuse
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setConnectionTTL(int connectionTTL) {
+            configBuilder.setConnectionTTL(connectionTTL);
+            return this;
+        }
+
+        /**
+         * Set the USER_AGENT header value
+         *
+         * @param userAgent the USER_AGENT header value
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setUserAgent(String userAgent) {
+            configBuilder.setUserAgent(userAgent);
+            return this;
+        }
+
+        /**
+         * Set to true to enable HTTP redirect
+         *
+         * @param followRedirect@return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setFollowRedirect(boolean followRedirect) {
+            configBuilder.setFollowRedirect(followRedirect);
+            return this;
+        }
+
+//        /**
+//         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeRequest(com.ning.http.client.Request)}
+//         *
+//         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
+//         * @return this
+//         */
+//        public RestClient.Builder addRequestFilter(RequestFilter requestFilter) {
+//            configBuilder.addRequestFilter(requestFilter);
+//            return this;
+//        }
+
+//        /**
+//         * Add an {@link com.ning.http.client.filter.IOExceptionFilter} that will be invoked when an {@link java.io.IOException}
+//         * occurs during the download/upload operations.
+//         *
+//         * @param ioExceptionFilter an {@link com.ning.http.client.filter.ResponseFilter}
+//         * @return this
+//         */
+//        public RestClient.Builder addIOExceptionFilter(IOExceptionFilter ioExceptionFilter) {
+//            configBuilder.addIOExceptionFilter(ioExceptionFilter);
+//            return this;
+//        }
+
+        /**
+         * Set to false if you don't want the query parameters removed when a redirect occurs.
+         *
+         * @param removeQueryParamOnRedirect
+         * @return this
+         */
         public RestClient.Builder setRemoveQueryParamsOnRedirect(boolean removeQueryParamOnRedirect) {
             configBuilder.setRemoveQueryParamsOnRedirect(removeQueryParamOnRedirect);
             return this;
         }
 
-        public RestClient.Builder setAsyncHttpClientProviderConfig(AsyncHttpProviderConfig<?, ?> providerConfig) {
-            configBuilder.setAsyncHttpClientProviderConfig(providerConfig);
+        /**
+         * Disable automatic url escaping
+         *
+         * @param disableUrlEncodingForBoundedRequests
+         * @return this
+         */
+        public RestClient.Builder setDisableUrlEncodingForBoundedRequests(boolean disableUrlEncodingForBoundedRequests) {
+            configBuilder.setDisableUrlEncodingForBoundedRequests(disableUrlEncodingForBoundedRequests);
             return this;
         }
 
-        public RestClient.Builder removeRequestFilter(RequestFilter requestFilter) {
-            configBuilder.removeRequestFilter(requestFilter);
+        /**
+         * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} waits until the response is completed.
+         *
+         * @param requestTimeout the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} waits until the response is completed.
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setRequestTimeout(int requestTimeout) {
+            configBuilder.setRequestTimeout(requestTimeout);
             return this;
         }
 
+        /**
+         * Set the {@link javax.net.ssl.SSLContext} for secure connection.
+         *
+         * @param sslContext the {@link javax.net.ssl.SSLContext} for secure connection
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setSSLContext(SSLContext sslContext) {
+            configBuilder.setSSLContext(sslContext);
+            return this;
+        }
+
+        /**
+         * Enforce HTTP compression.
+         *
+         * @param compressionEnforced true if compression is enforced
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setCompressionEnforced(boolean compressionEnforced) {
+            configBuilder.setCompressionEnforced(compressionEnforced);
+            return this;
+        }
+
+        /**
+         * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} will keep connection
+         * idle in pool.
+         *
+         * @param pooledConnectionIdleTimeout@return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
+        public RestClient.Builder setPooledConnectionIdleTimeout(int pooledConnectionIdleTimeout) {
+            configBuilder.setPooledConnectionIdleTimeout(pooledConnectionIdleTimeout);
+            return this;
+        }
+
+//        /**
+//         * Remove an {@link com.ning.http.client.filter.IOExceptionFilter} tthat will be invoked when an {@link java.io.IOException}
+//         * occurs during the download/upload operations.
+//         *
+//         * @param ioExceptionFilter an {@link com.ning.http.client.filter.ResponseFilter}
+//         * @return this
+//         */
+//        public RestClient.Builder removeIOExceptionFilter(IOExceptionFilter ioExceptionFilter) {
+//            configBuilder.removeIOExceptionFilter(ioExceptionFilter);
+//            return this;
+//        }
+
+        /**
+         * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can stay idle.
+         *
+         * @param readTimeout the maximum time in millisecond an {@code RestClient} can stay idle.
+         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         */
         public RestClient.Builder setReadTimeout(int readTimeout) {
             configBuilder.setReadTimeout(readTimeout);
             return this;

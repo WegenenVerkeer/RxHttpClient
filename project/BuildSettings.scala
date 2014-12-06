@@ -20,7 +20,7 @@ trait BuildSettings {
 
   lazy val testSettings = Seq(
     libraryDependencies ++= mainTestDependencies
-  ) //++ scalaTestOptions(Test) ++ scalaTestOptions(jacoco.Config)
+  )
 
   
   def projectSettings(projectName:String, extraDependencies:Seq[ModuleID]) = Seq(
@@ -33,6 +33,7 @@ trait BuildSettings {
     resolvers +=  "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
     resolvers += Resolver.typesafeRepo("releases"),
     libraryDependencies ++= extraDependencies
+
   )
 
   val publishingCredentials = (for {

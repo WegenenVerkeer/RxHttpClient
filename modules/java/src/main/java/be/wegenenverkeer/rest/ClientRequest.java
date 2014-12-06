@@ -1,98 +1,134 @@
 package be.wegenenverkeer.rest;
 
-import com.ning.http.client.Param;
-import com.ning.http.client.Request;
-import com.ning.http.client.RequestBuilder;
+import com.ning.http.client.*;
+import com.ning.http.client.cookie.Cookie;
+import com.ning.http.client.multipart.Part;
+import com.ning.http.client.uri.Uri;
+import rx.Observable;
 
-import java.util.ArrayList;
+import java.io.File;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
+ *
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
 public class ClientRequest {
 
-    final private HttpMethod method;
+    final private Request request;
 
-    final private String urlRelativePath;
-
-    final private Optional<String> bodyText;
-
-    final private List<Param> headers;
-
-    final private List<Param> queryParameters;
-
-    ClientRequest(
-            HttpMethod method,
-            String urlRelativePath,
-            String bodyText,
-            List<Param> headers,
-            List<Param> params
-    ) {
-        if (method == null) throw new IllegalStateException("Missing HTTP method");
-        this.method = method;
-        if (urlRelativePath == null) throw new IllegalStateException("Missing (relative) URL path");
-        this.urlRelativePath = urlRelativePath;
-        this.bodyText = Optional.ofNullable(bodyText);
-        this.headers = headers;
-        this.queryParameters = params;
+    ClientRequest(Request request) {
+        this.request = request;
     }
 
-    public HttpMethod method() {
-        return this.method;
+    public String getMethod() {
+        return request.getMethod();
     }
 
-    public String urlRelativePath() {
-        return this.urlRelativePath;
+    public long getContentLength() {
+        return request.getContentLength();
     }
 
-    public Optional<String> bodyText() {
-        return this.bodyText;
+    public Map<String, List<String>> getHeaders() {
+        return request.getHeaders();
     }
 
-    public List<Map.Entry<String, String>> headers() {
-        return toEntries(headers);
+
+    public File getFile() {
+        return request.getFile();
     }
 
-    public List<Map.Entry<String, String>> queryParameters() {
-        return toEntries(queryParameters);
+    public String getStringData() {
+        return request.getStringData();
     }
 
-    private List<Map.Entry<String,String>> toEntries(List<Param> params) {
-        List<Map.Entry<String, String>> list = new ArrayList<>();
-        for (Param p : params) {
-            list.add(new ParamEntry(p.getName(), p.getValue()));
-        }
-        return list;
+    public String getVirtualHost() {
+        return request.getVirtualHost();
     }
 
-    Request toAsyncRequest() {
-        RequestBuilder builder = new RequestBuilder(this.method.toString());
-        return null;
+    public Boolean getFollowRedirect() {
+        return request.getFollowRedirect();
     }
 
-    static class ParamEntry implements Map.Entry<String, String> {
-        final private String name;
-        final private String value;
-        ParamEntry(String name, String value){
-            this.name = name;
-            this.value = value;
-        }
-        @Override
-        public String getKey() {
-            return name;
-        }
+//    public Realm getRealm() {
+//        return request.getRealm();
+//    }
+//
+//    public ConnectionPoolPartitioning getConnectionPoolPartitioning() {
+//        return request.getConnectionPoolPartitioning();
+//    }
+//
+//    public InetAddress getInetAddress() {
+//        return request.getInetAddress();
+//    }
+//
+//    public List<Param> getFormParams() {
+//        return request.getFormParams();
+//    }
+//
+//    public List<Param> getQueryParams() {
+//        return request.getQueryParams();
+//    }
+//
+//    public BodyGenerator getBodyGenerator() {
+//        return request.getBodyGenerator();
+//    }
+//
+//    public ProxyServer getProxyServer() {
+//        return request.getProxyServer();
+//    }
 
-        @Override
-        public String getValue() {
-            return value;
-        }
-
-        @Override
-        public String setValue(String value) {
-            throw new UnsupportedOperationException();
-        }
+    public long getRangeOffset() {
+        return request.getRangeOffset();
     }
+
+//    public Uri getUri() {
+//        return request.getUri();
+//    }
+
+
+    public byte[] getByteData() {
+        return request.getByteData();
+    }
+
+    public int getRequestTimeout() {
+        return request.getRequestTimeout();
+    }
+
+    public InputStream getStreamData() {
+        return request.getStreamData();
+    }
+
+//    public InetAddress getLocalAddress() {
+//        return request.getLocalAddress();
+//    }
+
+    public String getUrl() {
+        return request.getUrl();
+    }
+
+    public List<byte[]> getCompositeByteData() {
+        return request.getCompositeByteData();
+    }
+
+//    public List<Part> getParts() {
+//        return request.getParts();
+//    }
+
+    public String getBodyEncoding() {
+        return request.getBodyEncoding();
+    }
+
+    public Request unwrap() {
+        return this.request;
+    }
+
+    public String toString() {
+        return this.request.toString();
+    }
+
 }
