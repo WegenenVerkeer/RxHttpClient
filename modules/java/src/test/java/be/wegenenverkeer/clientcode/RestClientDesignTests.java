@@ -234,25 +234,4 @@ public class RestClientDesignTests {
 
     }
 
-    // Note that this test doesn't fail!! Exceptions in errorHandlers are swallowed by rxjava.
-    // the Observable is supposed to log any "OnErrorFailedExceptions at the ERROR-loglevel
-//    @Test
-//    public void testFaultyOnErrorMethod() throws InterruptedException {
-//        CountDownLatch latch = new CountDownLatch(1);
-//
-//        //set up use case which will return a 404 response
-//        String path = "/contacts";
-//        ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-//        Observable<String> observable = client.sendRequest(request, ServerResponse::getResponseBody);
-//
-//        observable.subscribe(
-//                s -> {},
-//                //force an exception in errorHandler
-//                t -> {int a = 100 / 0;},
-//                () -> {}
-//        );
-//
-//        latch.await(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
-//    }
-
 }

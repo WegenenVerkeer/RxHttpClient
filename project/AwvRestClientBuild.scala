@@ -7,9 +7,10 @@ object AwvRestClientBuild extends Build
 	import Dependencies._
 
 	val Name = "awv-rest-client"
-        
+
 	val javaModuleName = Name + "-java"
-        lazy val javaModule = Project (
+
+	lazy val javaModule = Project(
 		javaModuleName,
 		file("modules/java"),
 		settings = buildSettings(javaModuleName, javaDependencies)

@@ -72,7 +72,6 @@ public class RestClient {
             try {
                 try {
                     int status = response.getStatusCode();
-                    //Everything above
                     if (status < 400) {
                         value = handler.apply(wrap(response));
                         subject.onNext(value);
