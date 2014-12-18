@@ -4,11 +4,14 @@ import com.ning.http.client.FluentCaseInsensitiveStringsMap;
 import com.ning.http.client.Response;
 import com.ning.http.client.cookie.Cookie;
 import com.ning.http.client.uri.Uri;
+import scala.Some;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Wraps an Async Response delegate.
@@ -19,7 +22,7 @@ import java.util.List;
  *
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
-public class ServerResponse {
+public class ServerResponse implements ServerResponseStatus, ServerResponseHeaders, ServerResponseBodyPart {
 
     final private Response response;
 
@@ -35,9 +38,10 @@ public class ServerResponse {
         return response.getStatusCode();
     }
 
-    public String getStatusText() {
-        return response.getStatusText();
+    public Optional<String> getStatusText() {
+        return Optional.ofNullable(response.getStatusText());
     }
+
 
     public String getResponseBody(String charset) {
         try {
@@ -71,7 +75,7 @@ public class ServerResponse {
         }
     }
 
-    public FluentCaseInsensitiveStringsMap getHeaders() {
+    public Map<String, List<String>> getHeaders() {
         return response.getHeaders();
     }
 
@@ -99,8 +103,8 @@ public class ServerResponse {
         }
     }
 
-    public String getContentType() {
-        return response.getContentType();
+    public Optional<String> getContentType() {
+        return Optional.ofNullable(response.getContentType());
     }
 
     public List<String> getHeaders(String name) {
@@ -131,7 +135,13 @@ public class ServerResponse {
         }
     }
 
-    public String getHeader(String name) {
-        return response.getHeader(name);
+    public Optional<String> getHeader(String name) {
+        return Optional.ofNullable(response.getHeader(name));
     }
+
+    @Override
+    public byte[] getBodyPartBytes() {
+        return getResponseBodyAsBytes();
+    }
+
 }

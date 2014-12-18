@@ -1,22 +1,16 @@
 package be.wegenenverkeer.rest;
 
-import com.ning.http.client.AsyncCompletionHandler;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.Response;
+import com.ning.http.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.exceptions.Exceptions;
-import rx.exceptions.OnErrorFailedException;
 import rx.subjects.AsyncSubject;
+import rx.subjects.BehaviorSubject;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
-
-import static be.wegenenverkeer.rest.ServerResponse.wrap;
 
 /**
  * A REST API Client
@@ -36,11 +30,40 @@ public class RestClient {
     }
 
 
-    public <F> Observable<F> sendRequest(ClientRequest request, Function<ServerResponse, F> handler) {
+    /**
+     * Sends a request and returns an Observable for the complete result.
+     * <p>
+     * When available, the complete response will be presented to any subscriber. Only one HTTP request
+     * will e made, regardless of the number of subscribers.
+     *
+     * @param request     the request to send
+     * @param transformer a function that transforms the {@link ServerResponse} to a value of F
+     * @param <F>         the type of return value
+     * @return An Observable that returns the transformed server response.
+     */
+    public <F> Observable<F> sendRequest(ClientRequest request, Function<ServerResponse, F> transformer) {
         logger.info("Sending Request: " + request.toString());
         AsyncSubject<F> subject = AsyncSubject.create();
-        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, handler));
+        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, transformer));
         return subject;
+    }
+
+    /**
+     * Returns a "cold" Observable for a stream of {@link ServerResponseElement}s.
+     * <p>
+     * The returned Observable is "deferred", i.e. on each subscription a new HTTP request is made
+     * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
+     *
+     * @param request the request to send
+     * @return a cold observable of ServerResponseElements
+     * @see Observable#defer
+     */
+    public Observable<ServerResponseElement> sendRequest(ClientRequest request) {
+        return Observable.defer(() -> {
+            BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
+            innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
+            return subject;
+        });
     }
 
     public String getBaseUrl() {
@@ -53,53 +76,6 @@ public class RestClient {
 
     public ClientRequestBuilder requestBuilder() {
         return new ClientRequestBuilder(this);
-    }
-
-    class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
-
-        final private AsyncSubject<? super F> subject;
-        final private Function<ServerResponse, F> handler;
-
-
-        AsyncCompletionHandlerWrapper(AsyncSubject<? super F> subject, Function<ServerResponse, F> handler) {
-            this.subject = subject;
-            this.handler = handler;
-        }
-
-        @Override
-        public F onCompleted(Response response) throws Exception {
-            F value = null;
-            try {
-                try {
-                    int status = response.getStatusCode();
-                    if (status < 400) {
-                        value = handler.apply(wrap(response));
-                        subject.onNext(value);
-                        subject.onCompleted();
-                    } else if (status >= 400 && status < 500) {
-                        subject.onError(new HttpClientError(status, response.getStatusText() + "\n" + response.getResponseBody()));
-                    } else {
-                        subject.onError(new HttpServerError(status, response.getStatusText() + "\n" + response.getResponseBody()));
-                    }
-                } catch (Throwable t) {
-                    //TODO Should this logging not be done in the global onError handler? See Class RxJavaErrorHandler
-                    if (t instanceof OnErrorFailedException) {
-                        logger.error("onError handler failed: " + t.getMessage(), t);
-                    }
-                    subject.onError(t);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return value;
-        }
-
-        @Override
-        public void onThrowable(Throwable t) {
-            subject.onError(t);
-        }
-
-
     }
 
 
