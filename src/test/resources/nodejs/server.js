@@ -11,7 +11,7 @@ http.createServer(function (request, response) {
 
  
     response.write("START EVENTS:");
-    var size = 1000;
+    var size = 10;
     var counter = 1;
 
      function emitEvent() {
@@ -19,7 +19,7 @@ http.createServer(function (request, response) {
 		response.end("FINISHED");
 	} else {
 		response.write("Event emitted: " + counter++ + "\n");
-		setTimeout( emitEvent, 1000);
+		setTimeout( emitEvent, 100);
 	}
      }
  
