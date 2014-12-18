@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Wraps an Async Response delegate.
@@ -142,6 +143,12 @@ public class ServerResponse implements ServerResponseStatus, ServerResponseHeade
     @Override
     public byte[] getBodyPartBytes() {
         return getResponseBodyAsBytes();
+    }
+
+
+    @Override
+    public <T> T match(Function<ServerResponseStatus, T> matchStatus, Function<ServerResponseHeaders, T> matchHeaders, Function<ServerResponseBodyPart, T> matchBodyPart, Function<ServerResponse, T> matchServerResponse) {
+        return matchServerResponse.apply(this);
     }
 
 }
