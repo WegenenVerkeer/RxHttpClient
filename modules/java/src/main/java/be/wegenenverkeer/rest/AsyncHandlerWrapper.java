@@ -41,7 +41,11 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      */
     @Override
     public STATE onBodyPartReceived(HttpResponseBodyPart bodyPart) throws Exception {
-        if (!subject.hasObservers()) return STATE.ABORT;
+        if (!subject.hasObservers()) {
+            bodyPart.markUnderlyingConnectionAsToBeClosed();
+            onCompleted(); //send the uncompleted message
+            return STATE.ABORT;
+        }
         subject.onNext( new ServerResponseBodyPart(){
 
             @Override
@@ -52,6 +56,10 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
         return STATE.CONTINUE;
     }
 
+    //we don't check for hasObservers in the onStatusReceived() and onHeadersReceived(). This garantuees that
+    //processing continues until some response body parts are received, after which the connection can be
+    //marked as to be closed.
+
     /**
      * Invoked as soon as the HTTP status line has been received
      *
@@ -61,7 +69,6 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      */
     @Override
     public STATE onStatusReceived(HttpResponseStatus responseStatus) throws Exception {
-        if (!subject.hasObservers()) return STATE.ABORT;
         final int statuscode = responseStatus.getStatusCode();
 
         if (statuscode >= 400 && statuscode < 500) {
@@ -94,7 +101,6 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      */
     @Override
     public STATE onHeadersReceived(HttpResponseHeaders headers) throws Exception {
-        if (!subject.hasObservers()) return STATE.ABORT;
         subject.onNext(new ServerResponseHeadersBase(headers));
         return STATE.CONTINUE;
     }

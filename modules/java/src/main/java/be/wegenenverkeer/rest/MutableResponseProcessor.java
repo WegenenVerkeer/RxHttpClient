@@ -15,7 +15,7 @@ abstract public class MutableResponseProcessor {
 
     private Map<String, List<String>>  headers;
 
-    public static MutableResponseProcessor process(ServerResponseElement el,
+    public MutableResponseProcessor process(ServerResponseElement el,
                                                           MutableResponseProcessor processor) {
         return el.match(
 

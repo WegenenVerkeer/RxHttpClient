@@ -1,4 +1,5 @@
 var http = require('http');
+var url = require('url');
 
 /**
  * A ridiculously simplistic mock-service against which to test GETTING a chunked HTTP response.
@@ -8,16 +9,35 @@ var http = require('http');
 http.createServer(function (request, response) {
     response.setHeader('Content-Type', 'text/plain; charset=UTF-8');
     response.setHeader('Transfer-Encoding', 'chunked');
+    var cancelled = false;
 
+    request.on('close', function() {
+	console.log("Connection closed!");
+	cancelled = true;	
+	});
+
+    var reqNum= url.parse(request.url).pathname;
+    var size = parseInt(reqNum.substr(1));
+
+    if (isNaN(size)){
+	console.log("Can't interpret size, or not specified. Using default.");
+	size = process.env.TEST_APP_DEFAULT || 100;
+    }
+
+    console.log("Requested number of events: " + size);
  
     response.write("START EVENTS:");
-    var size = 10;
     var counter = 1;
 
      function emitEvent() {
-	if (counter == size) {
+	if (cancelled) {
+		console.log("Connection closed by client, so cancelling...");
+		response.end("Cancelled.");
+	}else if (counter > size) {
+		console.log("Ending connection");
 		response.end("FINISHED");
 	} else {
+		console.log("Emitting event" + counter);
 		response.write("Event emitted: " + counter++ + "\n");
 		setTimeout( emitEvent, 100);
 	}
@@ -26,4 +46,4 @@ http.createServer(function (request, response) {
    emitEvent(response, 1, 100);
  
  
-}).listen(process.env.VMC_APP_PORT || 9000, null);
+}).listen(process.env.TEST_APP_PORT || 9000, null);
