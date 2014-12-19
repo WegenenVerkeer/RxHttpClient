@@ -27,8 +27,8 @@ http.createServer(function (request, response) {
     console.log("Requested number of events: " + size);
  
     var counter = 1;
-
-     function emitEvent() {
+    var waitTime = 10;
+    function emitEvent() {
 	if (cancelled) {
 		console.log("Connection closed by client, so cancelling...");
 		response.end("Cancelled.");
@@ -38,11 +38,11 @@ http.createServer(function (request, response) {
 	} else {
 		console.log("Emitting event" + counter);
 		response.write("Event emitted: " + counter++ + "\n");
-		setTimeout( emitEvent, 100);
+		setTimeout( emitEvent, waitTime);
 	}
      }
  
-   emitEvent(response, 1, 100);
+   emitEvent();
  
  
 }).listen(process.env.TEST_APP_PORT || 9000, null);

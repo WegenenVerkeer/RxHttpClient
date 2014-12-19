@@ -55,7 +55,7 @@ abstract public class UsingWireMock {
         WireMock.resetToDefault();
     }
 
-    public List<String> items(String... v) {
+    public <V> List<V> items(V... v) {
         return Arrays.asList(v);
     }
 
