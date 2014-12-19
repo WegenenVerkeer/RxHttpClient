@@ -9,12 +9,14 @@ import rx.observers.TestSubscriber;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static junit.framework.Assert.assertEquals;
 
 /**
  * Tests that demonstrate processing a long and slow chunked response.
  *
+ * Notice that these tests require running the node server.js test server.That is why they are checked-in as @ignored
  *
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
@@ -37,7 +39,7 @@ public class RestClientTestChunkedResponse {
                 .setMethod("GET")
                 .setUrlRelativetoBase("/10")
                 .build();
-        Observable<ServerResponseElement> observable = client.sendRequest(request);
+        Observable<ServerResponseElement> observable = client.executeRequest(request);
 
         TestSubscriber<ServerResponseElement> subscriber = new TestSubscriber<>();
         observable.subscribe(subscriber);
@@ -64,7 +66,7 @@ public class RestClientTestChunkedResponse {
                 .setMethod("GET")
                 .setUrlRelativetoBase("/10")
                 .build();
-        Observable<ServerResponseElement> observable = client.sendRequest(request);
+        Observable<ServerResponseElement> observable = client.executeRequest(request);
 
         CollectingSubscriber<String> subscriber = new CollectingSubscriber<>((bytes) -> new String(bytes));
         observable.subscribe(subscriber);
@@ -84,15 +86,126 @@ public class RestClientTestChunkedResponse {
                 .setMethod("GET")
                 .setUrlRelativetoBase("/1000")
                 .build();
-        Observable<ServerResponseElement> observable = client.sendRequest(request);
+        Observable<ServerResponseElement> observable = client.executeRequest(request);
 
         CollectingSubscriber<String> subscriber = new CollectingSubscriber<>((bytes) -> new String(bytes));
         observable.subscribe(subscriber);
 
         Thread.sleep(500);
-        System.out.println("Unsubscribing!!");
+
         List<String> received = subscriber.collectImmediately();
-        assertEquals(6, received.size());
+
+        //note that this depends on the server emitting at 100 millis intervals.
+        assertEquals(5, received.size());
+
+    }
+
+
+    @Ignore
+    @Test
+    public void testObvervableComposition() throws InterruptedException, ExecutionException, TimeoutException {
+
+
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase("/10")
+                .build();
+
+        Observable<String> observable = client.executeRequest(request, (bytes) -> new String(bytes) );
+
+        TestSubscriber<String> subscriber = new TestSubscriber<>();
+        observable.subscribe(subscriber);
+
+        subscriber.awaitTerminalEvent(6000, TimeUnit.MILLISECONDS);
+
+        subscriber.assertNoErrors();
+        List<String> events = subscriber.getOnNextEvents();
+        assertEquals(10, events.size());
+
+
+    }
+
+
+    @Ignore
+    @Test
+    public void testObvervableCompositionWithErrors() throws InterruptedException, ExecutionException, TimeoutException {
+
+
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase("/100")
+                .build();
+
+        final AtomicInteger counter = new AtomicInteger(0);
+        Observable<String> observable = client.executeRequest(request, (bytes) -> {
+                    if (counter.incrementAndGet() > 4) {
+                        throw new RuntimeException("FORCED ERROR");
+                    }
+                    return new String(bytes);
+                }
+        );
+
+        TestSubscriber<String> subscriber = new TestSubscriber<>();
+        observable.subscribe(subscriber);
+
+        subscriber.awaitTerminalEvent(6000, TimeUnit.MILLISECONDS);
+
+        subscriber.assertTerminalEvent();
+        assertEquals(1, subscriber.getOnErrorEvents().size());
+        assertEquals("FORCED ERROR", subscriber.getOnErrorEvents().get(0).getMessage());
+        assertEquals(4, subscriber.getOnNextEvents().size());
+
+
+
+    }
+
+    // verify that cancellation works properly on filterd and mapped observable
+    @Ignore //because this requires for the moment that the node server.js runs.
+    @Test
+    public void testCancellationOnComposed() throws InterruptedException, ExecutionException, TimeoutException {
+
+
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase("/1000")
+                .build();
+        Observable<String> observable = client.executeRequest(request, (bytes) -> new String(bytes));
+
+
+        TestSubscriber<String> subscriber = new TestSubscriber<>();
+        observable.subscribe(subscriber);
+
+        Thread.sleep(500);
+
+        subscriber.unsubscribe();
+
+    }
+
+
+    // verify that cancellation works properly on filterd and mapped observable
+    @Ignore //because this requires for the moment that the node server.js runs.
+    @Test
+    public void testCancellationOnComposedTakeWhile() throws InterruptedException, ExecutionException, TimeoutException {
+
+
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase("/1000")
+                .build();
+
+        //request 1000 objects, but only take 10.
+        //the connection to the server is immediately closed.
+        Observable<String> observable =
+                client.executeRequest(request, (bytes) -> new String(bytes))
+                        .take(10);
+
+        TestSubscriber<String> subscriber = new TestSubscriber<>();
+        observable.subscribe(subscriber);
+
+        subscriber.awaitTerminalEvent(6000, TimeUnit.MILLISECONDS);
+        subscriber.assertNoErrors();
+        List<String> events = subscriber.getOnNextEvents();
+        assertEquals(10, events.size());
 
     }
 

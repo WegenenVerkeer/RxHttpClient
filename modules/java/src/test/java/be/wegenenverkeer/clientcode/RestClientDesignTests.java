@@ -87,7 +87,7 @@ public class RestClientDesignTests {
                 .addQueryParam("q", "test")
                 .build();
 
-        Observable<String> observable = client.sendRequest(request, ServerResponse::getResponseBody);
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
 
         TestSubscriber<String> sub = new TestSubscriber<>();
@@ -131,11 +131,11 @@ public class RestClientDesignTests {
                     .setMethod("GET")
                     .setUrlRelativetoBase(contactUrl).build();
             return client
-                    .sendRequest(followUp, ServerResponse::getResponseBody)
+                    .executeToCompletion(followUp, ServerResponse::getResponseBody)
                     .onErrorResumeNext(Observable.just("ERROR"));
         };
 
-        Observable<String> observable = client.sendRequest(request, ServerResponse::getResponseBody)
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody)
                 .flatMap(body -> {
                     List<String> l = JsonPath.read(body, "$.contacts");
                     return Observable.from(l);
@@ -159,7 +159,7 @@ public class RestClientDesignTests {
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<String> observable = client.sendRequest(request, ServerResponse::getResponseBody);
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
         TestSubscriber<String> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
@@ -192,7 +192,7 @@ public class RestClientDesignTests {
                 .setUrlRelativetoBase(path)
                 .build();
 
-        Observable<String> observable = client.sendRequest(request, ServerResponse::getResponseBody);
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
         TestSubscriber<String> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
@@ -221,7 +221,7 @@ public class RestClientDesignTests {
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<String> observable = client.sendRequest(request, ServerResponse::getResponseBody);
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
         TestSubscriber<String> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);

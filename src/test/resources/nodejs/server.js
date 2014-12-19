@@ -26,7 +26,6 @@ http.createServer(function (request, response) {
 
     console.log("Requested number of events: " + size);
  
-    response.write("START EVENTS:");
     var counter = 1;
 
      function emitEvent() {
@@ -35,7 +34,7 @@ http.createServer(function (request, response) {
 		response.end("Cancelled.");
 	}else if (counter > size) {
 		console.log("Ending connection");
-		response.end("FINISHED");
+		response.end();
 	} else {
 		console.log("Emitting event" + counter);
 		response.write("Event emitted: " + counter++ + "\n");

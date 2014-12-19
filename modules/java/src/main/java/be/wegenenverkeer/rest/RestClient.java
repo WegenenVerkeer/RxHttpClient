@@ -31,7 +31,7 @@ public class RestClient {
 
 
     /**
-     * Sends a request and returns an Observable for the complete result.
+     * Executes a request and returns an Observable for the complete response.
      * <p>
      * When available, the complete response will be presented to any subscriber. Only one HTTP request
      * will e made, regardless of the number of subscribers.
@@ -41,7 +41,7 @@ public class RestClient {
      * @param <F>         the type of return value
      * @return An Observable that returns the transformed server response.
      */
-    public <F> Observable<F> sendRequest(ClientRequest request, Function<ServerResponse, F> transformer) {
+    public <F> Observable<F> executeToCompletion(ClientRequest request, Function<ServerResponse, F> transformer) {
         logger.info("Sending Request: " + request.toString());
         AsyncSubject<F> subject = AsyncSubject.create();
         innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, transformer));
@@ -58,11 +58,35 @@ public class RestClient {
      * @return a cold observable of ServerResponseElements
      * @see Observable#defer
      */
-    public Observable<ServerResponseElement> sendRequest(ClientRequest request) {
+    public Observable<ServerResponseElement> executeRequest(ClientRequest request) {
         return Observable.defer(() -> {
             BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
             innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
             return subject;
+        });
+    }
+
+    /**
+     * Returns a "cold" Observable for a stream of {@code T}.
+     * <p>
+     * The returned Observable is "deferred", i.e. on each subscription a new HTTP request is made
+     * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
+     *
+     * @param request the request to send
+     * @return a cold observable of ServerResponseElements
+     * @see Observable#defer
+     */
+    public <F> Observable<F> executeRequest(ClientRequest request, Function<byte[], F> transformer) {
+        return Observable.defer(() -> {
+            BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
+            innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
+            return subject
+                    .filter(el -> el.match(e -> false, e -> false, e -> true, e -> true))
+                    .map(el -> el.match(
+                            e -> null, //won't happen, is filtered
+                            e -> null, //won't happen, is filtered
+                            e -> transformer.apply(e.getBodyPartBytes()),
+                            e -> transformer.apply(e.getResponseBodyAsBytes())));
         });
     }
 

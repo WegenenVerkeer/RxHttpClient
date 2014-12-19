@@ -20,7 +20,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.junit.Assert.*;
 
 /**
- * Supports the same set of tests as {@link RestClientDesignTests}, but uses the sendRequest(ServerRequest) method.
+ * Supports the same set of tests as {@link RestClientDesignTests}, but uses the executeRequest(ServerRequest) method.
  * * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 public class RestClientDesignWithServerElementsTests {
@@ -86,7 +86,7 @@ public class RestClientDesignWithServerElementsTests {
                 .addQueryParam("q", "test")
                 .build();
 
-        Observable<ServerResponseElement> observable = client.sendRequest(request);
+        Observable<ServerResponseElement> observable = client.executeRequest(request);
 
 
         TestSubscriber<ServerResponseElement> sub = new TestSubscriber<>();
@@ -117,7 +117,7 @@ public class RestClientDesignWithServerElementsTests {
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<ServerResponseElement> observable = client.sendRequest(request);
+        Observable<ServerResponseElement> observable = client.executeRequest(request);
 
 
         TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
@@ -152,7 +152,7 @@ public class RestClientDesignWithServerElementsTests {
                 .build();
 
 
-        Observable<ServerResponseElement> observable = client.sendRequest(request);
+        Observable<ServerResponseElement> observable = client.executeRequest(request);
 
 
         TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
@@ -183,7 +183,7 @@ public class RestClientDesignWithServerElementsTests {
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<ServerResponseElement> observable = client.sendRequest(request);
+        Observable<ServerResponseElement> observable = client.executeRequest(request);
 
 
         TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
