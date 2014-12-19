@@ -1,6 +1,6 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.rest.ClientRequest;
+import be.wegenenverkeer.rxhttp.ClientRequest;
 import org.junit.Test;
 import rx.Observable;
 import rx.observers.TestSubscriber;
@@ -11,14 +11,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 
-import static be.wegenenverkeer.rest.HTTPStatusCode.*;
-
 /**
  * Test for POST requests.
  *
  * Created by Karel Maesen, Geovise BVBA on 19/12/14.
  */
-public class RestClientPostTests extends UsingWireMock{
+public class RxHttpClientPostTests extends UsingWireMock{
 
     //this is a post that creates a contact entity, and then
     //retrieves it back from the server.
@@ -50,11 +48,11 @@ public class RestClientPostTests extends UsingWireMock{
 
         Observable<String> observable =
                 client.executeToCompletion(request, resp -> resp.getHeader("Location").get())
-                        .flatMap( url ->
-                                client.executeToCompletion(
-                                    client.requestBuilder().setMethod("GET").setUrlRelativetoBase(url).build(),
-                                        resp -> resp.getResponseBody()
-                                )
+                        .flatMap(url ->
+                                        client.executeToCompletion(
+                                                client.requestBuilder().setMethod("GET").setUrlRelativetoBase(url).build(),
+                                                resp -> resp.getResponseBody()
+                                        )
                         );
 
 

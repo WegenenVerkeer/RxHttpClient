@@ -19,7 +19,8 @@ trait BuildSettings {
 
 
   lazy val testSettings = Seq(
-    libraryDependencies ++= mainTestDependencies
+    libraryDependencies ++= mainTestDependencies,
+    parallelExecution in Test := false
   )
 
   

@@ -1,12 +1,12 @@
 import sbt.Keys._
 import sbt._
 
-object AwvRestClientBuild extends Build 
+object RxHttpClientBuild extends Build
 			  	with BuildSettings {
 
 	import Dependencies._
 
-	val Name = "awv-rest-client"
+	val Name = "RxHttpClient"
 
 	val javaModuleName = Name + "-java"
 

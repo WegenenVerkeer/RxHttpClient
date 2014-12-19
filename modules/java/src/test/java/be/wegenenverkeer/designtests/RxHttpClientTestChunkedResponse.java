@@ -1,6 +1,6 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.rest.*;
+import be.wegenenverkeer.rxhttp.*;
 import org.junit.Ignore;
 import org.junit.Test;
 import rx.Observable;
@@ -21,9 +21,9 @@ import static junit.framework.Assert.assertEquals;
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 
-public class RestClientTestChunkedResponse {
+public class RxHttpClientTestChunkedResponse {
 
-    RestClient client = new RestClient.Builder()
+    RxHttpClient client = new RxHttpClient.Builder()
             .setRequestTimeout(6000)
             .setMaxConnections(10)
             .setAccept("application/json")

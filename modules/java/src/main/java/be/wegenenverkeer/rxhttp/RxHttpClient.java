@@ -1,4 +1,4 @@
-package be.wegenenverkeer.rest;
+package be.wegenenverkeer.rxhttp;
 
 import com.ning.http.client.*;
 import org.slf4j.Logger;
@@ -16,15 +16,15 @@ import java.util.function.Function;
  * A REST API Client
  * Created by Karel Maesen, Geovise BVBA on 05/12/14.
  */
-public class RestClient {
+public class RxHttpClient {
 
-    final private static Logger logger = LoggerFactory.getLogger(RestClient.class);
+    final private static Logger logger = LoggerFactory.getLogger(RxHttpClient.class);
 
     final private AsyncHttpClient innerClient;
     final private RestClientConfig config;
 
 
-    protected RestClient(AsyncHttpClient innerClient, RestClientConfig config) {
+    protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config) {
         this.innerClient = innerClient;
         this.config = config;
     }
@@ -131,17 +131,17 @@ public class RestClient {
         private AsyncHttpClientConfig.Builder configBuilder = new AsyncHttpClientConfig.Builder();
         final private RestClientConfig rcConfig = new RestClientConfig();
 
-        public RestClient build() {
-            return new RestClient(new AsyncHttpClient(configBuilder.build()), rcConfig);
+        public RxHttpClient build() {
+            return new RxHttpClient(new AsyncHttpClient(configBuilder.build()), rcConfig);
         }
 
 
-        public RestClient.Builder setAccept(String acceptHeaderValue) {
+        public RxHttpClient.Builder setAccept(String acceptHeaderValue) {
             rcConfig.setAccept(acceptHeaderValue);
             return this;
         }
 
-        public RestClient.Builder setBaseUrl(String url) {
+        public RxHttpClient.Builder setBaseUrl(String url) {
             rcConfig.setBaseUrl(url);
             return this;
         }
@@ -151,9 +151,9 @@ public class RestClient {
          * Set the maximum number of connections an {@link com.ning.http.client.AsyncHttpClient} can handle.
          *
          * @param maxConnections the maximum number of connections an {@link com.ning.http.client.AsyncHttpClient} can handle.
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setMaxConnections(int maxConnections) {
+        public RxHttpClient.Builder setMaxConnections(int maxConnections) {
             configBuilder.setMaxConnections(maxConnections);
             return this;
         }
@@ -162,9 +162,9 @@ public class RestClient {
          * Set true if connection can be pooled by a ChannelPool. Default is true.
          *
          * @param allowPoolingConnections true if connection can be pooled by a ChannelPool
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setAllowPoolingConnections(boolean allowPoolingConnections) {
+        public RxHttpClient.Builder setAllowPoolingConnections(boolean allowPoolingConnections) {
             configBuilder.setAllowPoolingConnections(allowPoolingConnections);
             return this;
         }
@@ -173,9 +173,9 @@ public class RestClient {
          * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can wait when connecting to a remote host
          *
          * @param connectTimeOut the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can wait when connecting to a remote host
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setConnectTimeout(int connectTimeOut) {
+        public RxHttpClient.Builder setConnectTimeout(int connectTimeOut) {
             configBuilder.setConnectTimeout(connectTimeOut);
             return this;
         }
@@ -197,9 +197,9 @@ public class RestClient {
          *
          * @param applicationThreadPool the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
          *                              asynchronous response.
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setExecutorService(ExecutorService applicationThreadPool) {
+        public RxHttpClient.Builder setExecutorService(ExecutorService applicationThreadPool) {
             configBuilder.setExecutorService(applicationThreadPool);
             return this;
         }
@@ -208,9 +208,9 @@ public class RestClient {
          * Set the maximum time in millisecond an {@link com.ning.http.client.ws.WebSocket} can stay idle.
          *
          * @param webSocketTimeout the maximum time in millisecond an {@link com.ning.http.client.ws.WebSocket} can stay idle.
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setWebSocketTimeout(int webSocketTimeout) {
+        public RxHttpClient.Builder setWebSocketTimeout(int webSocketTimeout) {
             configBuilder.setWebSocketTimeout(webSocketTimeout);
             return this;
         }
@@ -221,7 +221,7 @@ public class RestClient {
          * @param maxRequestRetry the number of time a request will be retried
          * @return this
          */
-        public RestClient.Builder setMaxRequestRetry(int maxRequestRetry) {
+        public RxHttpClient.Builder setMaxRequestRetry(int maxRequestRetry) {
             configBuilder.setMaxRequestRetry(maxRequestRetry);
             return this;
         }
@@ -237,7 +237,7 @@ public class RestClient {
          * @param hostnameVerifier {@link javax.net.ssl.HostnameVerifier}
          * @return this
          */
-        public RestClient.Builder setHostnameVerifier(HostnameVerifier hostnameVerifier) {
+        public RxHttpClient.Builder setHostnameVerifier(HostnameVerifier hostnameVerifier) {
             configBuilder.setHostnameVerifier(hostnameVerifier);
             return this;
         }
@@ -264,7 +264,7 @@ public class RestClient {
 //            return this;
 //        }
 
-        public RestClient.Builder setEnabledProtocols(String[] enabledProtocols) {
+        public RxHttpClient.Builder setEnabledProtocols(String[] enabledProtocols) {
             configBuilder.setEnabledProtocols(enabledProtocols);
             return this;
         }
@@ -287,7 +287,7 @@ public class RestClient {
          * @return this
          * @since 1.8.13
          */
-        public RestClient.Builder setUseRelativeURIsWithConnectProxies(boolean useRelativeURIsWithConnectProxies) {
+        public RxHttpClient.Builder setUseRelativeURIsWithConnectProxies(boolean useRelativeURIsWithConnectProxies) {
             configBuilder.setUseRelativeURIsWithConnectProxies(useRelativeURIsWithConnectProxies);
             return this;
         }
@@ -296,14 +296,14 @@ public class RestClient {
          * Set the maximum number of connections per hosts an {@link com.ning.http.client.AsyncHttpClient} can handle.
          *
          * @param maxConnectionsPerHost the maximum number of connections per host an {@link com.ning.http.client.AsyncHttpClient} can handle.
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setMaxConnectionsPerHost(int maxConnectionsPerHost) {
+        public RxHttpClient.Builder setMaxConnectionsPerHost(int maxConnectionsPerHost) {
             configBuilder.setMaxConnectionsPerHost(maxConnectionsPerHost);
             return this;
         }
 
-        public RestClient.Builder setEnabledCipherSuites(String[] enabledCipherSuites) {
+        public RxHttpClient.Builder setEnabledCipherSuites(String[] enabledCipherSuites) {
             configBuilder.setEnabledCipherSuites(enabledCipherSuites);
             return this;
         }
@@ -314,7 +314,7 @@ public class RestClient {
          * @param allowPoolingSslConnections true if enabled
          * @return this
          */
-        public RestClient.Builder setAllowPoolingSslConnections(boolean allowPoolingSslConnections) {
+        public RxHttpClient.Builder setAllowPoolingSslConnections(boolean allowPoolingSslConnections) {
             configBuilder.setAllowPoolingSslConnections(allowPoolingSslConnections);
             return this;
         }
@@ -344,7 +344,7 @@ public class RestClient {
          *
          * @param useProxyProperties
          */
-        public RestClient.Builder setUseProxyProperties(boolean useProxyProperties) {
+        public RxHttpClient.Builder setUseProxyProperties(boolean useProxyProperties) {
             configBuilder.setUseProxyProperties(useProxyProperties);
             return this;
         }
@@ -356,7 +356,7 @@ public class RestClient {
          *
          * @param useProxySelector
          */
-        public RestClient.Builder setUseProxySelector(boolean useProxySelector) {
+        public RxHttpClient.Builder setUseProxySelector(boolean useProxySelector) {
             configBuilder.setUseProxySelector(useProxySelector);
             return this;
         }
@@ -377,19 +377,19 @@ public class RestClient {
          * Set the maximum number of HTTP redirect
          *
          * @param maxRedirects the maximum number of HTTP redirect
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setMaxRedirects(int maxRedirects) {
+        public RxHttpClient.Builder setMaxRedirects(int maxRedirects) {
             configBuilder.setMaxRedirects(maxRedirects);
             return this;
         }
 
-        public RestClient.Builder setAcceptAnyCertificate(boolean acceptAnyCertificate) {
+        public RxHttpClient.Builder setAcceptAnyCertificate(boolean acceptAnyCertificate) {
             configBuilder.setAcceptAnyCertificate(acceptAnyCertificate);
             return this;
         }
 
-        public RestClient.Builder setIOThreadMultiplier(int multiplier) {
+        public RxHttpClient.Builder setIOThreadMultiplier(int multiplier) {
             configBuilder.setIOThreadMultiplier(multiplier);
             return this;
         }
@@ -402,7 +402,7 @@ public class RestClient {
          * @return this
          * @since 1.7.2
          */
-        public RestClient.Builder setStrict302Handling(boolean strict302Handling) {
+        public RxHttpClient.Builder setStrict302Handling(boolean strict302Handling) {
             configBuilder.setStrict302Handling(strict302Handling);
             return this;
         }
@@ -411,9 +411,9 @@ public class RestClient {
          * Set the maximum time in millisecond connection can be added to the pool for further reuse
          *
          * @param connectionTTL the maximum time in millisecond connection can be added to the pool for further reuse
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setConnectionTTL(int connectionTTL) {
+        public RxHttpClient.Builder setConnectionTTL(int connectionTTL) {
             configBuilder.setConnectionTTL(connectionTTL);
             return this;
         }
@@ -422,9 +422,9 @@ public class RestClient {
          * Set the USER_AGENT header value
          *
          * @param userAgent the USER_AGENT header value
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setUserAgent(String userAgent) {
+        public RxHttpClient.Builder setUserAgent(String userAgent) {
             configBuilder.setUserAgent(userAgent);
             return this;
         }
@@ -432,9 +432,9 @@ public class RestClient {
         /**
          * Set to true to enable HTTP redirect
          *
-         * @param followRedirect@return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @param followRedirect@return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setFollowRedirect(boolean followRedirect) {
+        public RxHttpClient.Builder setFollowRedirect(boolean followRedirect) {
             configBuilder.setFollowRedirect(followRedirect);
             return this;
         }
@@ -468,7 +468,7 @@ public class RestClient {
          * @param removeQueryParamOnRedirect
          * @return this
          */
-        public RestClient.Builder setRemoveQueryParamsOnRedirect(boolean removeQueryParamOnRedirect) {
+        public RxHttpClient.Builder setRemoveQueryParamsOnRedirect(boolean removeQueryParamOnRedirect) {
             configBuilder.setRemoveQueryParamsOnRedirect(removeQueryParamOnRedirect);
             return this;
         }
@@ -479,7 +479,7 @@ public class RestClient {
          * @param disableUrlEncodingForBoundedRequests
          * @return this
          */
-        public RestClient.Builder setDisableUrlEncodingForBoundedRequests(boolean disableUrlEncodingForBoundedRequests) {
+        public RxHttpClient.Builder setDisableUrlEncodingForBoundedRequests(boolean disableUrlEncodingForBoundedRequests) {
             configBuilder.setDisableUrlEncodingForBoundedRequests(disableUrlEncodingForBoundedRequests);
             return this;
         }
@@ -488,9 +488,9 @@ public class RestClient {
          * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} waits until the response is completed.
          *
          * @param requestTimeout the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} waits until the response is completed.
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setRequestTimeout(int requestTimeout) {
+        public RxHttpClient.Builder setRequestTimeout(int requestTimeout) {
             configBuilder.setRequestTimeout(requestTimeout);
             return this;
         }
@@ -499,9 +499,9 @@ public class RestClient {
          * Set the {@link javax.net.ssl.SSLContext} for secure connection.
          *
          * @param sslContext the {@link javax.net.ssl.SSLContext} for secure connection
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setSSLContext(SSLContext sslContext) {
+        public RxHttpClient.Builder setSSLContext(SSLContext sslContext) {
             configBuilder.setSSLContext(sslContext);
             return this;
         }
@@ -510,9 +510,9 @@ public class RestClient {
          * Enforce HTTP compression.
          *
          * @param compressionEnforced true if compression is enforced
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setCompressionEnforced(boolean compressionEnforced) {
+        public RxHttpClient.Builder setCompressionEnforced(boolean compressionEnforced) {
             configBuilder.setCompressionEnforced(compressionEnforced);
             return this;
         }
@@ -521,9 +521,9 @@ public class RestClient {
          * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} will keep connection
          * idle in pool.
          *
-         * @param pooledConnectionIdleTimeout@return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @param pooledConnectionIdleTimeout@return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setPooledConnectionIdleTimeout(int pooledConnectionIdleTimeout) {
+        public RxHttpClient.Builder setPooledConnectionIdleTimeout(int pooledConnectionIdleTimeout) {
             configBuilder.setPooledConnectionIdleTimeout(pooledConnectionIdleTimeout);
             return this;
         }
@@ -544,9 +544,9 @@ public class RestClient {
          * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can stay idle.
          *
          * @param readTimeout the maximum time in millisecond an {@code RestClient} can stay idle.
-         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
+         * @return a {@link RxHttpClient.Builder}
          */
-        public RestClient.Builder setReadTimeout(int readTimeout) {
+        public RxHttpClient.Builder setReadTimeout(int readTimeout) {
             configBuilder.setReadTimeout(readTimeout);
             return this;
         }

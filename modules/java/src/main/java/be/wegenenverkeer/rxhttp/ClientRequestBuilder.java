@@ -1,13 +1,8 @@
-package be.wegenenverkeer.rest;
+package be.wegenenverkeer.rxhttp;
 
 import com.ning.http.client.*;
-import com.ning.http.client.cookie.Cookie;
-import com.ning.http.client.multipart.Part;
-import com.ning.http.client.uri.Uri;
 
 import java.io.File;
-import java.io.InputStream;
-import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -18,17 +13,17 @@ import java.util.Map;
 public class ClientRequestBuilder {
 
     final private RequestBuilder inner;
-    final private RestClient client;
+    final private RxHttpClient client;
 
     //mutable state to check conformity to policy
     private boolean hasAcceptHeader;
 
-    ClientRequestBuilder(RestClient client) {
+    ClientRequestBuilder(RxHttpClient client) {
         inner = new RequestBuilder();
         this.client = client;
     }
 
-    ClientRequestBuilder(RestClient client, String method) {
+    ClientRequestBuilder(RxHttpClient client, String method) {
         this.client = client;
         inner = new RequestBuilder(method);
     }

@@ -1,4 +1,4 @@
-package be.wegenenverkeer.rest;
+package be.wegenenverkeer.rxhttp;
 
 import java.util.function.Function;
 

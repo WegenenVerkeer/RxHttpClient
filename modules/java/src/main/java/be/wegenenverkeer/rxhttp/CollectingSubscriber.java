@@ -1,7 +1,6 @@
-package be.wegenenverkeer.rest;
+package be.wegenenverkeer.rxhttp;
 
 import rx.Subscriber;
-import rx.observers.SafeSubscriber;
 
 import java.util.ArrayList;
 import java.util.List;

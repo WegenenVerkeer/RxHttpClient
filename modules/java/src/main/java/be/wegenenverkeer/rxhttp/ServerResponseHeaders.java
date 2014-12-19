@@ -1,4 +1,4 @@
-package be.wegenenverkeer.rest;
+package be.wegenenverkeer.rxhttp;
 
 import java.util.List;
 import java.util.Map;

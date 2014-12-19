@@ -1,4 +1,4 @@
-package be.wegenenverkeer.rest;
+package be.wegenenverkeer.rxhttp;
 
 import com.ning.http.client.AsyncCompletionHandler;
 import com.ning.http.client.Response;
@@ -9,7 +9,7 @@ import rx.subjects.AsyncSubject;
 
 import java.util.function.Function;
 
-import static be.wegenenverkeer.rest.ServerResponse.wrap;
+import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.

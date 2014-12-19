@@ -1,10 +1,8 @@
-package be.wegenenverkeer.rest;
+package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.FluentCaseInsensitiveStringsMap;
 import com.ning.http.client.Response;
 import com.ning.http.client.cookie.Cookie;
 import com.ning.http.client.uri.Uri;
-import scala.Some;
 
 import java.io.IOException;
 import java.io.InputStream;

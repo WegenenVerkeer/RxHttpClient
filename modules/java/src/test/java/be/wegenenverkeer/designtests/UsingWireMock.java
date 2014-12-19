@@ -1,6 +1,6 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.rest.RestClient;
+import be.wegenenverkeer.rxhttp.RxHttpClient;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.junit.AfterClass;
@@ -27,7 +27,7 @@ abstract public class UsingWireMock {
     static WireMockServer server;
 
     //use one Client for all tests.
-    static RestClient client;
+    static RxHttpClient client;
 
 
     @BeforeClass
@@ -36,18 +36,18 @@ abstract public class UsingWireMock {
         server.start();
         configureFor("localhost", port);
 
-        client = new RestClient.Builder()
+        client = new RxHttpClient.Builder()
                 .setRequestTimeout(REQUEST_TIME_OUT)
                 .setMaxConnections(10)
                 .setAccept("application/json")
                 .setBaseUrl("http://localhost:" + port)
                 .build();
-
     }
 
     @AfterClass
-    public static void shutDownServer() {
+    public static void shutDownServer() throws InterruptedException {
         server.shutdown();
+        Thread.sleep(1000); //allow the Jetty to shutdown.
     }
 
     @Before

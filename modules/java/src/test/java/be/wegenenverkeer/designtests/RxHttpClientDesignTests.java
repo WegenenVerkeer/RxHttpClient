@@ -1,29 +1,25 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.rest.*;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import be.wegenenverkeer.rxhttp.*;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.Test;
 import rx.Observable;
 import rx.observers.TestSubscriber;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.Assert.*;
 
 /**
- * Supports the same set of tests as {@link RestClientDesignTests}, but uses the executeRequest(ServerRequest) method.
- * * Created by Karel Maesen, Geovise BVBA on 18/12/14.
+ * Behavior Unit test
+ * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
-public class RestClientDesignWithServerElementsTests extends UsingWireMock{
+public class RxHttpClientDesignTests extends UsingWireMock{
+
 
     @Test
     public void GETHappyPath() throws InterruptedException {
@@ -32,7 +28,7 @@ public class RestClientDesignWithServerElementsTests extends UsingWireMock{
         stubFor(get(urlPathEqualTo("/contacts?q=test"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT / 3)
+                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT/3)
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(expectBody)));
@@ -45,27 +41,68 @@ public class RestClientDesignWithServerElementsTests extends UsingWireMock{
                 .addQueryParam("q", "test")
                 .build();
 
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
 
-        TestSubscriber<ServerResponseElement> sub = new TestSubscriber<>();
+        TestSubscriber<String> sub = new TestSubscriber<>();
         observable.subscribe(sub);
 
         sub.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
-        sub.assertTerminalEvent();
-        for (ServerResponseElement el : sub.getOnNextEvents()) {
-            if (el instanceof ServerResponseStatus) {
-                assertEquals(200, ((ServerResponseStatus) el).getStatusCode());
-            } else if (el instanceof ServerResponseBodyPart) {
-                assertEquals(expectBody, new String(((ServerResponseBodyPart) el).getBodyPartBytes()));
-            } else if (el instanceof ServerResponseHeaders) {
-                assertEquals("application/json", ((ServerResponseHeaders)el).getContentType().get() );
-            } else {
-                fail("Unknown Server Response element: " + el.getClass().getCanonicalName());
-            }
-        }
 
+        sub.assertReceivedOnNext(items(expectBody));
+
+
+    }
+
+    @Test
+    public void demonstrateComposableObservable() throws InterruptedException {
+        //set up stubs
+        String expectBody = "{ 'contacts': ['contacts/1','contacts/2','contacts/3'] }";
+        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+                .withQueryParam("q", equalTo("test"))
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(aResponse().withFixedDelay(10)
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(expectBody)));
+        stubFor(get(urlPathEqualTo("/contacts/1")).withHeader("Accept", equalTo("application/json")).willReturn(aResponse().withStatus(404).withBody("ONE")));
+        stubFor(get(urlPathEqualTo("/contacts/2")).withHeader("Accept", equalTo("application/json")).willReturn(aResponse().withStatus(200).withBody("TWO")));
+        stubFor(get(urlPathEqualTo("/contacts/3")).withHeader("Accept", equalTo("application/json")).willReturn(aResponse().withStatus(200).withBody("THREE")));
+
+
+
+        //use case
+        String path = "/contacts";
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase(path)
+                .addQueryParam("q", "test")
+                .build();
+
+        Function<String, Observable<String>> followLink  = (String contactUrl) -> {
+            ClientRequest followUp = client.requestBuilder()
+                    .setMethod("GET")
+                    .setUrlRelativetoBase(contactUrl).build();
+            return client
+                    .executeToCompletion(followUp, ServerResponse::getResponseBody)
+                    .onErrorResumeNext(Observable.just("ERROR"));
+        };
+
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody)
+                .flatMap(body -> {
+                    List<String> l = JsonPath.read(body, "$.contacts");
+                    return Observable.from(l);
+                }).flatMap(contactUrl -> followLink.apply(contactUrl));
+
+
+        //verify behaviour
+        TestSubscriber<String> sub = new TestSubscriber<>();
+        observable.subscribe(sub);
+        sub.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+
+        sub.assertNoErrors();
+        assertEquals(new HashSet<String>(items("ERROR", "TWO", "THREE")), new HashSet<String>(sub.getOnNextEvents()));
 
     }
 
@@ -76,10 +113,9 @@ public class RestClientDesignWithServerElementsTests extends UsingWireMock{
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-
-        TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
+        TestSubscriber<String> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
         testsubscriber.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
@@ -110,11 +146,8 @@ public class RestClientDesignWithServerElementsTests extends UsingWireMock{
                 .setUrlRelativetoBase(path)
                 .build();
 
-
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
-
-
-        TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        TestSubscriber<String> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
         testsubscriber.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
@@ -142,10 +175,9 @@ public class RestClientDesignWithServerElementsTests extends UsingWireMock{
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-
-        TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
+        TestSubscriber<String> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
         testsubscriber.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);

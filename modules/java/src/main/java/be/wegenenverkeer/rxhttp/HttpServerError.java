@@ -1,4 +1,4 @@
-package be.wegenenverkeer.rest;
+package be.wegenenverkeer.rxhttp;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
