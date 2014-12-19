@@ -23,48 +23,7 @@ import static org.junit.Assert.*;
  * Supports the same set of tests as {@link RestClientDesignTests}, but uses the executeRequest(ServerRequest) method.
  * * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
-public class RestClientDesignWithServerElementsTests {
-
-
-    static final int REQUEST_TIME_OUT = 100;
-    static final int DEFAULT_TIME_OUT = REQUEST_TIME_OUT * 5;
-
-    static int port = 8089;
-
-    static WireMockServer server;
-
-    //use one Client for all tests.
-    static RestClient client;
-
-
-    @BeforeClass
-    public static void setUpAndStartServer() {
-        server = new WireMockServer(wireMockConfig().port(port));
-        server.start();
-        configureFor("localhost", port);
-
-        client = new RestClient.Builder()
-                .setRequestTimeout(REQUEST_TIME_OUT)
-                .setMaxConnections(10)
-                .setAccept("application/json")
-                .setBaseUrl("http://localhost:" + port)
-                .build();
-
-    }
-
-    @AfterClass
-    public static void shutDownServer() {
-        server.shutdown();
-    }
-
-    @Before
-    public void resetServer() {
-        WireMock.resetToDefault();
-    }
-
-    public List<String> items(String... v) {
-        return Arrays.asList(v);
-    }
+public class RestClientDesignWithServerElementsTests extends UsingWireMock{
 
     @Test
     public void GETHappyPath() throws InterruptedException {
