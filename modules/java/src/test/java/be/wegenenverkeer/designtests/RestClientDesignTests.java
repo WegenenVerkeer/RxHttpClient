@@ -1,4 +1,4 @@
-package be.wegenenverkeer.clientcode;
+package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.rest.*;
 import com.github.tomakehurst.wiremock.WireMockServer;
