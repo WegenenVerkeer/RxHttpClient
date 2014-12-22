@@ -28,7 +28,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         stubFor(get(urlPathEqualTo("/contacts?q=test"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT/3)
+                .willReturn(aResponse().withFixedDelay(200)
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(expectBody)));
@@ -169,7 +169,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         //set up stub
         stubFor(get(urlEqualTo("/contacts"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT * 2)
+                .willReturn(aResponse().withFixedDelay(200)
                         .withStatus(200)));
 
         //set up use case
@@ -180,7 +180,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         TestSubscriber<String> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
-        testsubscriber.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        testsubscriber.awaitTerminalEvent(100, TimeUnit.MILLISECONDS);
 
         List onErrorEvents = testsubscriber.getOnErrorEvents();
         assertFalse(onErrorEvents.isEmpty());

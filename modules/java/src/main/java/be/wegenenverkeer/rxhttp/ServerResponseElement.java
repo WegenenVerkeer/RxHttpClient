@@ -11,8 +11,8 @@ public interface ServerResponseElement {
 
     /**
      * Apply a function on this instance, depending on its type.
-     * <p/>
-     * This is a condensed form of the Visitor pattern.
+     *
+     * <p>This uses a condensed form of the Visitor pattern.</p>
      *
      * @param matchStatus the function to invoke when this instance is a {@code ServerResponseStatus}
      * @param matchHeaders the function to invoke when this instance is a {@code ServerResponseHeaders}
