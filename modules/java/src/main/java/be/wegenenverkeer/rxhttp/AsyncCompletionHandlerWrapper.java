@@ -12,6 +12,8 @@ import java.util.function.Function;
 import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
 
 /**
+ * A {@link AsyncCompletionHandler} that pushes received items to a specified {@link AsyncSubject}
+ *
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
@@ -22,9 +24,15 @@ class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
     final private Function<ServerResponse, F> handler;
 
 
-    AsyncCompletionHandlerWrapper(AsyncSubject<? super F> subject, Function<ServerResponse, F> handler) {
+    /**
+     * Constructs a new instance with specified subject and response transform
+     * @param subject the subject that receives the ServerResponse, after transformation
+     * @param transform the transformation function
+     */
+    AsyncCompletionHandlerWrapper(AsyncSubject<? super F> subject, Function<ServerResponse, F> transform) {
+        if (subject == null || transform == null) throw new IllegalArgumentException();
         this.subject = subject;
-        this.handler = handler;
+        this.handler = transform;
     }
 
     @Override

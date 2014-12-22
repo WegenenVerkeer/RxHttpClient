@@ -3,7 +3,7 @@ package be.wegenenverkeer.rxhttp;
 /**
  * HTTP status codes
  *
- * See RFC 2616
+ * @See RFC 2616
  *
  * Created by Karel Maesen, Geovise BVBA on 19/12/14.
  */

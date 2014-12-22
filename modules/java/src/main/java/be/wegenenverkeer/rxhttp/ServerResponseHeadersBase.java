@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
+ * Base implementation of the ServerResponseHeaders interface. Only used internally.
+ *
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 class ServerResponseHeadersBase implements ServerResponseHeaders {

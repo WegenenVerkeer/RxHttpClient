@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 /**
- * A REST API Client
+ * A Reactive HTTP Client
  * Created by Karel Maesen, Geovise BVBA on 05/12/14.
  */
 public class RxHttpClient {
@@ -90,14 +90,30 @@ public class RxHttpClient {
         });
     }
 
+    /**
+     * Returns the base URL that this client connects to.
+     *
+     * @return the base URL that this client connects to.
+     */
     public String getBaseUrl() {
         return this.config.getBaseUrl();
     }
 
+    /**
+     * Returns the configured default ACCEPT header for requests created using this instance's
+     * {@code ClientRequestBuilder}s.
+     *
+     * @return the configured default ACCEPT header for requests created using this instance's {@code ClientRequestBuilder}s.
+     */
     public String getAccept() {
         return config.getAccept();
     }
 
+    /**
+     * Returns a new {@code ClientRequestBuilder}.
+     *
+     * @return a new {@code ClientRequestBuilder}.
+     */
     public ClientRequestBuilder requestBuilder() {
         return new ClientRequestBuilder(this);
     }
@@ -126,6 +142,10 @@ public class RxHttpClient {
     }
 
 
+    /**
+     * A Builder for {@code RxHttpClient} builders.
+     *
+     */
     static public class Builder {
 
         private AsyncHttpClientConfig.Builder configBuilder = new AsyncHttpClientConfig.Builder();

@@ -1,6 +1,8 @@
 package be.wegenenverkeer.rxhttp;
 
 /**
+ * Abstract Exception class for HTTP Error status codes.
+ *
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
 abstract public class HttpError extends RuntimeException {

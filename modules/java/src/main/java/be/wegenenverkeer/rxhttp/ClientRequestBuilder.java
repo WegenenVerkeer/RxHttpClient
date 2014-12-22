@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * A Builder for Client Requests.
+ *
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
 public class ClientRequestBuilder {
@@ -21,11 +23,6 @@ public class ClientRequestBuilder {
     ClientRequestBuilder(RxHttpClient client) {
         inner = new RequestBuilder();
         this.client = client;
-    }
-
-    ClientRequestBuilder(RxHttpClient client, String method) {
-        this.client = client;
-        inner = new RequestBuilder(method);
     }
 
     public ClientRequest build() {

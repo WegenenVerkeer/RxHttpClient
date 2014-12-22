@@ -5,6 +5,14 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
+ * An abstract base class for implementations that process the {@code ServerResponseElement}s that are
+ * returned by a HTTP request. Implementors should provide the processPart(byte[]) method.
+ * <p/>
+ * Response status and headers are read whenever offered in the process() method, and the response body (in whole or
+ * part by part) are processed by the processPart() method.
+ * <p/>
+ * This class is mutable, side-effecting and not thread-safe.
+ *
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 abstract public class MutableResponseProcessor {
@@ -15,47 +23,70 @@ abstract public class MutableResponseProcessor {
 
     private Map<String, List<String>>  headers;
 
-    public MutableResponseProcessor process(ServerResponseElement el,
-                                                          MutableResponseProcessor processor) {
-        return el.match(
+    /**
+     * Processes the specified {@code ServerResponseElement}
+     *
+     * @param el the {@code ServerResponseElement} to process
+     */
+    public void process(ServerResponseElement el) {
+        el.match(
 
                 (status) -> {
-                    processor.statusCode = status.getStatusCode();
-                    processor.statusText = status.getStatusText();
-                    return processor;
+                    statusCode = status.getStatusCode();
+                    statusText = status.getStatusText();
+                    return true;
                 },
 
                 (header) -> {
-                    processor.headers = header.getHeaders();
-                    return processor;
+                 headers = header.getHeaders();
+                    return true;
                 },
 
                 (part) -> {
-                    processor.processPart(part.getBodyPartBytes());
-                    return processor;
+                    processPart(part.getBodyPartBytes());
+                    return true;
                 },
 
                 (response) -> {
-                    processor.statusCode = response.getStatusCode();
-                    processor.statusText = response.getStatusText();
-                    processor.headers = response.getHeaders();
-                    processor.processPart(response.getResponseBodyAsBytes());
-                    return processor;
+                    statusCode = response.getStatusCode();
+                    statusText = response.getStatusText();
+                    headers = response.getHeaders();
+                    processPart(response.getResponseBodyAsBytes());
+                    return true;
                 }
 
         );
     }
 
+    /**
+     * Processes the response body part
+     *
+     * @param bytes the response body as a byte array
+     */
     abstract void processPart(byte[] bytes);
 
+    /**
+     * Returns the HTTP Statuscode
+     *
+     * @return the HTTP Statuscode
+     */
     public int getStatusCode() {
         return statusCode;
     }
 
+    /**
+     * Returns the Status text, if any
+     * @return Some status text, or None
+     */
     public Optional<String> getStatusText() {
         return statusText;
     }
 
+    /**
+     * Returns the HTTP Response headers
+     *
+     * @return the HTTP Response headers
+     */
     public Map<String, List<String>> getHeaders() {
         return headers;
     }

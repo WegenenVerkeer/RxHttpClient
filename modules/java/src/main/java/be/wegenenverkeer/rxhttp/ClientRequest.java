@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Wraps a {@link Request} into a more limited interface.
  *
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
