@@ -73,10 +73,12 @@ public class RxHttpClient {
      * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
      *
      * @param request the request to send
+     * @param transform the function that transforms the response body (chunks) into objects of type F
+     * @param <F> return type of the transform
      * @return a cold observable of ServerResponseElements
      * @see Observable#defer
      */
-    public <F> Observable<F> executeRequest(ClientRequest request, Function<byte[], F> transformer) {
+    public <F> Observable<F> executeRequest(ClientRequest request, Function<byte[], F> transform) {
         return Observable.defer(() -> {
             BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
             innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
@@ -85,8 +87,8 @@ public class RxHttpClient {
                     .map(el -> el.match(
                             e -> null, //won't happen, is filtered
                             e -> null, //won't happen, is filtered
-                            e -> transformer.apply(e.getBodyPartBytes()),
-                            e -> transformer.apply(e.getResponseBodyAsBytes())));
+                            e -> transform.apply(e.getBodyPartBytes()),
+                            e -> transform.apply(e.getResponseBodyAsBytes())));
         });
     }
 
@@ -303,7 +305,7 @@ public class RxHttpClient {
         /**
          * Configures this AHC instance to use relative URIs instead of absolute ones when talking with a SSL proxy or WebSocket proxy.
          *
-         * @param useRelativeURIsWithConnectProxies
+         * @param useRelativeURIsWithConnectProxies use relative URIs with connect proxies
          * @return this
          * @since 1.8.13
          */

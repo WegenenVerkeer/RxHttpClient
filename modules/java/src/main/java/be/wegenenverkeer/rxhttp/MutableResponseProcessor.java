@@ -7,11 +7,11 @@ import java.util.Optional;
 /**
  * An abstract base class for implementations that process the {@code ServerResponseElement}s that are
  * returned by a HTTP request. Implementors should provide the processPart(byte[]) method.
- * <p/>
- * Response status and headers are read whenever offered in the process() method, and the response body (in whole or
- * part by part) are processed by the processPart() method.
- * <p/>
- * This class is mutable, side-effecting and not thread-safe.
+ *
+ * <p>Response status and headers are read whenever offered in the process() method, and the response body (in whole or
+ * part by part) are processed by the processPart() method.</p>
+ *
+ * <p>This class is mutable, side-effecting and not thread-safe.</p>
  *
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */

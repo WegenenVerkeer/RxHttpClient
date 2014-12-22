@@ -11,8 +11,8 @@ import java.util.function.Function;
 
 /**
  * A {@link Subscriber} that collects all parts of a response body, after transformation, into a List.
- * <p/>
- * CollectingSubscribers are definitely not thread-safe
+ *
+ *  <p>CollectingSubscribers are definitely not thread-safe</p>
  *
  * @param <T> the Type to which each response body part is transformed to.
  *
