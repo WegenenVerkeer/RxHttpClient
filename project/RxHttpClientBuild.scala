@@ -16,6 +16,14 @@ object RxHttpClientBuild extends Build
 		settings = buildSettings(javaModuleName, javaDependencies)
 	)
 
+	val scalaModuleName = Name + "-scala"
+
+	lazy val scalaModule = Project(
+		scalaModuleName,
+		file("modules/scala"),
+		settings = buildSettings(scalaModuleName, scalaDependencies)
+	) dependsOn javaModule
+
 	lazy val main = Project(
 		Name,
 		file("."),
