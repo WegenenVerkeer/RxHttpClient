@@ -169,8 +169,16 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         //set up stub
         stubFor(get(urlEqualTo("/contacts"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(200)
+                .willReturn(aResponse().withFixedDelay(500)
                         .withStatus(200)));
+
+        //set up client with very low connection time-out values
+        RxHttpClient client = new RxHttpClient.Builder()
+                .setRequestTimeout(100)
+                .setMaxConnections(1)
+                .setAccept("application/json")
+                .setBaseUrl("http://localhost:" + port)
+                .build();
 
         //set up use case
         String path = "/contacts";
@@ -180,7 +188,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         TestSubscriber<String> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
-        testsubscriber.awaitTerminalEvent(100, TimeUnit.MILLISECONDS);
+        testsubscriber.awaitTerminalEvent(1000, TimeUnit.MILLISECONDS);
 
         List onErrorEvents = testsubscriber.getOnErrorEvents();
         assertFalse(onErrorEvents.isEmpty());
