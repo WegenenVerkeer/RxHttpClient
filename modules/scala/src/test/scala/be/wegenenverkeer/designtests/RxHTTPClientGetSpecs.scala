@@ -59,7 +59,8 @@ trait UsingMockServer extends After  {
 
   val REQUEST_TIME_OUT = 5000
 
-  val port: Int = 8089
+  //we take a different port then in java-client module, because tests unfortunately continue to overlap with java client module
+  val port: Int = 8088
 
   val client = new RxHttpClient.Builder()
     .setRequestTimeout(REQUEST_TIME_OUT)

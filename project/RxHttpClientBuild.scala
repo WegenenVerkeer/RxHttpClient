@@ -28,7 +28,7 @@ object RxHttpClientBuild extends Build
 		Name,
 		file("."),
 		settings = buildSettings(Name)
-	) .aggregate(javaModule)
+	) .aggregate(javaModule, scalaModule)
 
 }
 
