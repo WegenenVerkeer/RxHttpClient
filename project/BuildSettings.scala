@@ -1,3 +1,4 @@
+import com.typesafe.sbt.SbtSite.site
 import sbt._
 import sbt.Configuration
 import sbt.Keys._
@@ -63,6 +64,11 @@ trait BuildSettings {
     credentials ++= publishingCredentials
   )
 
+  lazy val siteSettings =
+    site.settings ++
+      site.includeScaladoc()
+
+
   def buildSettings(projectName:String, extraDependencies:Seq[ModuleID] = Seq()) = {
     Defaults.defaultSettings ++
       projectSettings(projectName, extraDependencies) ++
@@ -70,6 +76,8 @@ trait BuildSettings {
       publishSettings ++
       jacoco.settings
   }
+
+
 
   lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
       <licenses>

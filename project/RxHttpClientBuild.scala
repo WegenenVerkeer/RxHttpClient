@@ -1,5 +1,5 @@
-import sbt.Keys._
 import sbt._
+import com.typesafe.sbt.SbtSite._
 
 object RxHttpClientBuild extends Build
 			  	with BuildSettings {
@@ -13,7 +13,7 @@ object RxHttpClientBuild extends Build
 	lazy val javaModule = Project(
 		javaModuleName,
 		file("modules/java"),
-		settings = buildSettings(javaModuleName, javaDependencies)
+		settings = buildSettings(javaModuleName, javaDependencies) ++ siteSettings
 	)
 
 	val scalaModuleName = Name + "-scala"
@@ -21,8 +21,9 @@ object RxHttpClientBuild extends Build
 	lazy val scalaModule = Project(
 		scalaModuleName,
 		file("modules/scala"),
-		settings = buildSettings(scalaModuleName, scalaDependencies)
+		settings = buildSettings(scalaModuleName, scalaDependencies) ++ siteSettings
 	) dependsOn javaModule
+
 
 	lazy val main = Project(
 		Name,
