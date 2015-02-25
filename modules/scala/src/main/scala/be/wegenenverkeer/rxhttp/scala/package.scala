@@ -1,4 +1,4 @@
-package be.wegenenverkeer.rxhttpclient
+package be.wegenenverkeer.rxhttp
 
 /**
  * This package adapts the Java RxHttpClient so that it returns rxScala Observables.
