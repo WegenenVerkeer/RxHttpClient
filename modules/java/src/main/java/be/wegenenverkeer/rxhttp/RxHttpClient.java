@@ -9,8 +9,12 @@ import rx.subjects.BehaviorSubject;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.function.Function;
+
+import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
 
 /**
  * A Reactive HTTP Client
@@ -31,10 +35,34 @@ public class RxHttpClient {
 
 
     /**
+     ** Executes a request and returns an Observable for the complete response.
+     */
+    public <F> Future<F> execute(ClientRequest request, final Function<ServerResponse, F> transformer ){
+        logger.info("Sending Request: " + request.toString());
+        final CompletableFuture future = new CompletableFuture();
+        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandler<F>(){
+            @Override
+            public F onCompleted(Response response) throws Exception {
+                F transformed = transformer.apply(wrap(response));
+                future.complete(transformed);
+                return transformed;
+
+            }
+
+            @Override
+            public void onThrowable(Throwable t) {
+                super.onThrowable(t);
+                future.completeExceptionally(t);
+            }
+        });
+        return future;
+    }
+
+    /**
      * Executes a request and returns an Observable for the complete response.
      * <p>
      * When available, the complete response will be presented to any subscriber. Only one HTTP request
-     * will e made, regardless of the number of subscribers.
+     * will be made, regardless of the number of subscribers.
      *
      * @param request     the request to send
      * @param transformer a function that transforms the {@link ServerResponse} to a value of F
@@ -58,7 +86,7 @@ public class RxHttpClient {
      * @return a cold observable of ServerResponseElements
      * @see Observable#defer
      */
-    public Observable<ServerResponseElement> executeRequest(ClientRequest request) {
+    public Observable<ServerResponseElement> executeObservably(ClientRequest request) {
         return Observable.defer(() -> {
             BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
             innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
@@ -78,7 +106,7 @@ public class RxHttpClient {
      * @return a cold observable of ServerResponseElements
      * @see Observable#defer
      */
-    public <F> Observable<F> executeRequest(ClientRequest request, Function<byte[], F> transform) {
+    public <F> Observable<F> executeObservably(ClientRequest request, Function<byte[], F> transform) {
         return Observable.defer(() -> {
             BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
             innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
@@ -276,7 +304,7 @@ public class RxHttpClient {
 //        }
 
 //        /**
-//         * Remove an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeRequest(com.ning.http.client.Request)}
+//         * Remove an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeObservably(com.ning.http.client.Request)}
 //         *
 //         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
 //         * @return this
@@ -462,7 +490,7 @@ public class RxHttpClient {
         }
 
 //        /**
-//         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeRequest(com.ning.http.client.Request)}
+//         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeObservably(com.ning.http.client.Request)}
 //         *
 //         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
 //         * @return this

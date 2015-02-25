@@ -13,7 +13,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.Assert.*;
 
 /**
- * Supports the same set of tests as {@link RxHttpClientDesignTests}, but uses the executeRequest(ServerRequest) method.
+ * Supports the same set of tests as {@link RxHttpClientDesignTests}, but uses the executeObservably(ServerRequest) method.
  * * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock{
@@ -38,7 +38,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock{
                 .addQueryParam("q", "test")
                 .build();
 
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<ServerResponseElement> observable = client.executeObservably(request);
 
 
         TestSubscriber<ServerResponseElement> sub = new TestSubscriber<>();
@@ -69,7 +69,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock{
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<ServerResponseElement> observable = client.executeObservably(request);
 
 
         TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
@@ -104,7 +104,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock{
                 .build();
 
 
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<ServerResponseElement> observable = client.executeObservably(request);
 
 
         TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
@@ -135,7 +135,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock{
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<ServerResponseElement> observable = client.executeObservably(request);
 
 
         TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();

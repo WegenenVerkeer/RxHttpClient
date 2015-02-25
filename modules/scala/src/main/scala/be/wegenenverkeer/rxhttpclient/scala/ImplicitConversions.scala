@@ -21,11 +21,11 @@ object ImplicitConversions {
   case class RichRxHttpClient(inner: RxHttpClient) {
 
     def executeRequest[T](req: ClientRequest, transform : Array[Byte] => T) : Observable[T] =
-      inner.executeRequest(req, toJavaFunction(transform))
+      inner.executeObservably(req, toJavaFunction(transform))
 
 
     def executeRequest(req: ClientRequest) : Observable[ServerResponseElement] =
-      inner.executeRequest(req)
+      inner.executeObservably(req)
 
 
     def executeToCompletion[T](req: ClientRequest, transform: ServerResponse => T) : Observable[T] =
