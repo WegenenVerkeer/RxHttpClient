@@ -30,6 +30,7 @@ trait BuildSettings {
     name := projectName,
     version := Version,
     scalaVersion := ScalaVersion,
+    crossScalaVersions := Seq("2.11.5"),
     scalacOptions := ScalaBuildOptions,
     parallelExecution := false,
     resolvers +=  "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
