@@ -9,11 +9,12 @@ import rx.subjects.AsyncSubject;
 
 import java.util.function.Function;
 
+import static be.wegenenverkeer.rxhttp.CompleteResponseHandler.withCompleteResponse;
 import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
 
 /**
  * A {@link AsyncCompletionHandler} that pushes received items to a specified {@link AsyncSubject}
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
@@ -26,7 +27,8 @@ class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
 
     /**
      * Constructs a new instance with specified subject and response transform
-     * @param subject the subject that receives the ServerResponse, after transformation
+     *
+     * @param subject   the subject that receives the ServerResponse, after transformation
      * @param transform the transformation function
      */
     AsyncCompletionHandlerWrapper(AsyncSubject<? super F> subject, Function<ServerResponse, F> transform) {
@@ -37,30 +39,25 @@ class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
 
     @Override
     public F onCompleted(Response response) throws Exception {
-        F value = null;
         try {
-            try {
-                int status = response.getStatusCode();
-                if (status < 400) {
-                    value = handler.apply(wrap(response));
-                    subject.onNext(value);
-                    subject.onCompleted();
-                } else if (status >= 400 && status < 500) {
-                    subject.onError(new HttpClientError(status, response.getStatusText() + "\n" + response.getResponseBody()));
-                } else {
-                    subject.onError(new HttpServerError(status, response.getStatusText() + "\n" + response.getResponseBody()));
-                }
-            } catch (Throwable t) {
-                //TODO Should this logging not be done in the global onError handler? See Class RxJavaErrorHandler
-                if (t instanceof OnErrorFailedException) {
-                    logger.error("onError handler failed: " + t.getMessage(), t);
-                }
-                subject.onError(t);
+            withCompleteResponse(
+                    response,
+                    (r) -> {
+                        F value = handler.apply(wrap(r));
+                        subject.onNext(value);
+                        subject.onCompleted();
+                    },
+                    (ex) -> subject.onError(ex),
+                    (ex) -> subject.onError(ex)
+            );
+        } catch (Throwable t) {
+            //TODO Should this logging not be done in the global onError handler? See Class RxJavaErrorHandler
+            if (t instanceof OnErrorFailedException) {
+                logger.error("onError handler failed: " + t.getMessage(), t);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            subject.onError(t);
         }
-        return value;
+        return null;
     }
 
     @Override

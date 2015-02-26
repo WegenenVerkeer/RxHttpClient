@@ -24,9 +24,13 @@ object ImplicitConversions {
 
   private def fromJavaFuture[B](jfuture: CompletionStage[B]) : Future[B] = {
     val p = Promise[B]()
+
     val consumer = new BiConsumer[B, Throwable] {
-      override def accept(t: B, u: Throwable): Unit = p.complete(Success(t))
+      override def accept(v: B, t: Throwable): Unit =
+        if (t == null) p.complete(Success(v))
+      else p.complete(Failure(t))
     }
+
     jfuture.whenComplete( consumer )
     p.future
   }

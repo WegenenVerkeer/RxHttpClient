@@ -11,9 +11,9 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 
+import static be.wegenenverkeer.rxhttp.CompleteResponseHandler.withCompleteResponse;
 import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
 
 /**
@@ -39,14 +39,24 @@ public class RxHttpClient {
      */
     public <F> CompletableFuture<F> execute(ClientRequest request, Function<ServerResponse, F> transformer ){
         logger.info("Sending Request: " + request.toString());
-        final CompletableFuture future = new CompletableFuture();
+        final CompletableFuture<F> future = new CompletableFuture<>();
         innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandler<F>(){
             @Override
             public F onCompleted(Response response) throws Exception {
-                F transformed = transformer.apply(wrap(response));
-                future.complete(transformed);
-                return transformed;
-
+                try {
+                    withCompleteResponse(response,
+                            (r) -> {
+                                F transformed = transformer.apply(wrap(response));
+                                future.complete(transformed);
+                            },
+                            future::completeExceptionally,
+                            future::completeExceptionally
+                    );
+                } catch(Throwable t) {
+                    logger.error("onError handler failed: " + t.getMessage(), t);
+                    future.completeExceptionally(t);
+                }
+                return null;
             }
 
             @Override
