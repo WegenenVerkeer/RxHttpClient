@@ -69,6 +69,21 @@ trait BuildSettings {
     site.settings ++
       site.includeScaladoc()
 
+  lazy val extraJavaSettings = Seq(
+//    //    / disable .jar publishing
+//    publishArtifact in (Compile, packageBin) := false
+//
+//    // create an Artifact for publishing the .jar file without the ScalaVersion attached
+//    artifact in (Compile, packageBin) := {
+//      val previous: Artifact = (artifact in (Compile, packageBin)).value
+//      previous.copy(`type` = "war", extension = "war")
+//    }
+//
+//    // add the .war file to what gets published
+//    addArtifact(artifact in (Compile, packageBin), packageBin)
+    crossPaths := false
+  )
+
 
   def buildSettings(projectName:String, extraDependencies:Seq[ModuleID] = Seq()) = {
     Defaults.defaultSettings ++

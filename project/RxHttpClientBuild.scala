@@ -13,7 +13,7 @@ object RxHttpClientBuild extends Build
 	lazy val javaModule = Project(
 		javaModuleName,
 		file("modules/java"),
-		settings = buildSettings(javaModuleName, javaDependencies) ++ siteSettings
+		settings = buildSettings(javaModuleName, javaDependencies) ++ siteSettings ++ extraJavaSettings
 	)
 
 	val scalaModuleName = Name + "-scala"
