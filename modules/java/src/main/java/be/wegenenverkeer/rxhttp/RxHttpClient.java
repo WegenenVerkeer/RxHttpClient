@@ -150,6 +150,13 @@ public class RxHttpClient {
     }
 
     /**
+     * Closes the underlying connection
+     */
+    public void close(){
+        this.innerClient.close();
+    }
+
+    /**
      * Returns a new {@code ClientRequestBuilder}.
      *
      * @return a new {@code ClientRequestBuilder}.
