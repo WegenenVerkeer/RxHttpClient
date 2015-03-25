@@ -250,14 +250,6 @@ public class ClientRequestBuilder {
         return client.getBaseUrl() + "/" + p;
     }
 
-    private static String chopLastForwardSlash(String url) {
-        if (url.charAt(url.length() - 1) == '/') {
-            url = url.substring(0, url.length() - 1);
-        }
-        return url;
-    }
-
-
     private static String chopFirstForwardSlash(String url) {
         if (url.charAt(0) == '/') {
             url = url.substring(1, url.length());

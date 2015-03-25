@@ -44,7 +44,7 @@ class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
                     response,
                     (r) -> {
                         F value = handler.apply(wrap(r));
-                        subject.onNext(value);
+                        if (value != null) subject.onNext(value);
                         subject.onCompleted();
                     },
                     (ex) -> subject.onError(ex),

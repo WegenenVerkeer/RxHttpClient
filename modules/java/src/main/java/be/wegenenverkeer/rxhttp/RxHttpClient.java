@@ -172,7 +172,7 @@ public class RxHttpClient {
         private String Accept = "application/json";
 
         public void setBaseUrl(String baseUrl) {
-            this.baseUrl = baseUrl;
+            this.baseUrl = chopLastForwardSlash(baseUrl);
         }
 
         public String getBaseUrl() {
@@ -186,6 +186,14 @@ public class RxHttpClient {
         public void setAccept(String accept) {
             Accept = accept;
         }
+
+        private static String chopLastForwardSlash(String url) {
+            if (url.charAt(url.length() - 1) == '/') {
+                url = url.substring(0, url.length() - 1);
+            }
+            return url;
+        }
+
     }
 
 
