@@ -12,7 +12,7 @@ trait BuildSettings {
   val Organization = "be.wegenenverkeer"
   
   val Version = "0.1.0-SNAPSHOT"
-  val ScalaVersion = "2.10.3"
+  val ScalaVersion = "2.11.5"
   val ScalaBuildOptions = Seq("-unchecked", "-deprecation", "-feature",
     "-language:reflectiveCalls",
     "-language:implicitConversions",
@@ -30,7 +30,7 @@ trait BuildSettings {
     name := projectName,
     version := Version,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.11.5"),
+    crossScalaVersions := Seq("2.10.3", "2.11.5"),
     scalacOptions := ScalaBuildOptions,
     parallelExecution := false,
     resolvers +=  "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
@@ -70,17 +70,6 @@ trait BuildSettings {
       site.includeScaladoc()
 
   lazy val extraJavaSettings = Seq(
-//    //    / disable .jar publishing
-//    publishArtifact in (Compile, packageBin) := false
-//
-//    // create an Artifact for publishing the .jar file without the ScalaVersion attached
-//    artifact in (Compile, packageBin) := {
-//      val previous: Artifact = (artifact in (Compile, packageBin)).value
-//      previous.copy(`type` = "war", extension = "war")
-//    }
-//
-//    // add the .war file to what gets published
-//    addArtifact(artifact in (Compile, packageBin), packageBin)
     crossPaths := false
   )
 
