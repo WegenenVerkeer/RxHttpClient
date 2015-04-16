@@ -118,7 +118,7 @@ public class ClientRequest {
         return request.getBodyEncoding();
     }
 
-    public Request unwrap() {
+    Request unwrap() {
         return this.request;
     }
 

@@ -1,8 +1,13 @@
 package be.wegenenverkeer.rxhttp;
 
 import com.ning.http.client.*;
+import com.ning.http.client.cookie.Cookie;
+import com.ning.http.client.multipart.ByteArrayPart;
+import com.ning.http.client.multipart.FilePart;
+import com.ning.http.client.multipart.StringPart;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +40,53 @@ public class ClientRequestBuilder {
             addHeader("Accept", client.getAccept());
         }
     }
+
+    /**
+     * Adds a byte array as part in a multi-part request
+     * @param name The name of the part, or <code>null</code>
+     * @param bytes the content of the part
+     * @param contentType The content type, or <code>null</code>
+     * @param charset The character encoding, or <code>null</code>
+     * @param contentId The content id, or <code>null</code>
+     * @param transferEncoding The transfer encoding, or <code>null</code>
+     * @return this {@code ClientRequestBuilder}
+     */
+    public ClientRequestBuilder addByteArrayBodyPart(String name, byte[] bytes, String contentType, Charset charset, String contentId, String transferEncoding) {
+        inner.addBodyPart( new ByteArrayPart(name, bytes, contentType, charset, contentId, transferEncoding) );
+        return this;
+    }
+
+    /**
+     * Adds the content of a {@code File} as part in a multi-part request
+     * @param name The name of the part, or <code>null</code>
+     * @param file the file containing the content of the part
+     * @param contentType The content type, or <code>null</code>
+     * @param charset The character encoding, or <code>null</code>
+     * @param contentId The content id, or <code>null</code>
+     * @param transferEncoding The transfer encoding, or <code>null</code>
+     * @return this {@code ClientRequestBuilder}
+     */
+    public ClientRequestBuilder addFileBodyPart(String name, File file, String contentType, Charset charset, String fileName, String contentId, String transferEncoding) {
+        inner.addBodyPart( new FilePart(name, file, contentType, charset, contentId, transferEncoding) );
+        return this;
+    }
+
+    /**
+     * Adds the specified {@code String} as part in a multi-part request
+     * @param name The name of the part, or <code>null</code>
+     * @param value the content of the part
+     * @param contentType The content type, or <code>null</code>
+     * @param charset The character encoding, or <code>null</code>
+     * @param contentId The content id, or <code>null</code>
+     * @param transferEncoding The transfer encoding, or <code>null</code>
+     * @return this {@code ClientRequestBuilder}
+     */
+    public ClientRequestBuilder addStringBodyPart(String name, String value, String contentType, Charset charset, String contentId, String transferEncoding) {
+        inner.addBodyPart( new StringPart(name, value, contentType, charset, contentId, transferEncoding) );
+        return this;
+    }
+
+
 
 //    public RequestBuilder addBodyPart(Part part) {
 //        return inner.addBodyPart(part);
@@ -105,10 +157,10 @@ public class ClientRequestBuilder {
 //        return this;
 //    }
 
-//    public ClientRequestBuilder addQueryParams(List<Param> queryParams) {
-//        inner.addQueryParams(queryParams);
-//        return this;
-//    }
+    public ClientRequestBuilder addQueryParams(List<Param> queryParams) {
+        inner.addQueryParams(queryParams);
+        return this;
+    }
 
     public ClientRequestBuilder addQueryParam(String name, String value) {
         inner.addQueryParam(name, value);
@@ -124,10 +176,10 @@ public class ClientRequestBuilder {
 //        return this;
 //    }
 
-//    public ClientRequestBuilder setFormParams(Map<String, List<String>> params) {
-//        inner.setFormParams(params);
-//        return this;
-//    }
+    public ClientRequestBuilder setFormParams(Map<String, List<String>> params) {
+        inner.setFormParams(params);
+        return this;
+    }
 
     public ClientRequestBuilder setBody(byte[] data) {
         inner.setBody(data);

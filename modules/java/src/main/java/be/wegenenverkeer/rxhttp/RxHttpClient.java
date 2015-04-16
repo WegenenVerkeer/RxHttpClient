@@ -36,10 +36,15 @@ public class RxHttpClient {
 
     /**
      ** Executes a request and returns an Observable for the complete response.
+     *
+     *
      */
     public <F> CompletableFuture<F> execute(ClientRequest request, Function<ServerResponse, F> transformer ){
         logger.info("Sending Request: " + request.toString());
+        //Note: we don't use Observable.toBlocking().toFuture()
+        //because we need a CompletableFuture so that interop with Scala is possible
         final CompletableFuture<F> future = new CompletableFuture<>();
+
         innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandler<F>(){
             @Override
             public F onCompleted(Response response) throws Exception {
