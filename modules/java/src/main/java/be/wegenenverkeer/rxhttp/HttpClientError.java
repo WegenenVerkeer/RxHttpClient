@@ -1,5 +1,7 @@
 package be.wegenenverkeer.rxhttp;
 
+import com.ning.http.client.Response;
+
 /**
  * Unchecked Exception for HTTP Client errors (4xx status code).
  *
@@ -8,11 +10,15 @@ package be.wegenenverkeer.rxhttp;
 public class HttpClientError  extends HttpError{
 
     public HttpClientError(int statusCode) {
-        super(statusCode);
+        super(statusCode, null);
     }
 
-    public HttpClientError(int statusCode, String message) {
-        super(statusCode, message);
+    public HttpClientError(int statusCode, ServerResponse response) {
+        super(statusCode, response);
+    }
+
+    public HttpClientError(int statusCode, ServerResponse response, String message) {
+        super(statusCode, response, message);
     }
 
 }

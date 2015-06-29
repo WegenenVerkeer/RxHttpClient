@@ -2,7 +2,6 @@ package be.wegenenverkeer.rxhttp;
 
 import com.ning.http.client.Response;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 
 /**
@@ -21,20 +20,10 @@ class CompleteResponseHandler {
         if (status < 400) {
             handleSuccess.accept(response);
         } else if (status >= 400 && status < 500) {
-            handleClientError.accept(new HttpClientError(status, response.getStatusText() + "\n" + getResponseBody(response)));
+            handleClientError.accept(new HttpClientError(status, ServerResponse.wrap(response), "request failed with status = "+response.getStatusText()));
         } else {
-            handleClientError.accept(new HttpServerError(status, response.getStatusText() + "\n" + getResponseBody(response)));
+            handleServerError.accept(new HttpServerError(status, ServerResponse.wrap(response), "request failed with status = "+response.getStatusText()));
         }
-    }
-
-    private static String getResponseBody(Response response){
-        String msg = null;
-        try {
-            msg = response.getResponseBody();
-        } catch (IOException e) {
-            // drop exception (is only an error message)
-        }
-        return msg;
     }
 
 }
