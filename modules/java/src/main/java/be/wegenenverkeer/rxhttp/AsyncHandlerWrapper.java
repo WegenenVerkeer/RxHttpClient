@@ -73,9 +73,9 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
         final int statuscode = responseStatus.getStatusCode();
 
         if (statuscode >= 400 && statuscode < 500) {
-            subject.onError(new HttpClientError(statuscode, responseStatus.getStatusText()));
+            subject.onError(new HttpClientError(statuscode, null, responseStatus.getStatusText()));
         } else if (statuscode >= 500) {
-            subject.onError(new HttpServerError(statuscode, responseStatus.getStatusText()));
+            subject.onError(new HttpServerError(statuscode, null, responseStatus.getStatusText()));
         }
 
         subject.onNext(new ServerResponseStatus() {

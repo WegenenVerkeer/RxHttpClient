@@ -11,8 +11,8 @@ trait BuildSettings {
   import Dependencies._
   val Organization = "be.wegenenverkeer"
   
-  val Version = "0.1.0-SNAPSHOT"
-  val ScalaVersion = "2.11.5"
+  val Version = "0.2.0-SNAPSHOT"
+  val ScalaVersion = "2.11.7"
   val ScalaBuildOptions = Seq("-unchecked", "-deprecation", "-feature",
     "-language:reflectiveCalls",
     "-language:implicitConversions",
@@ -30,7 +30,7 @@ trait BuildSettings {
     name := projectName,
     version := Version,
     scalaVersion := ScalaVersion,
-    crossScalaVersions := Seq("2.10.3", "2.11.5"),
+    crossScalaVersions := Seq("2.10.3", "2.11.7"),
     scalacOptions := ScalaBuildOptions,
     parallelExecution := false,
     resolvers +=  "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
