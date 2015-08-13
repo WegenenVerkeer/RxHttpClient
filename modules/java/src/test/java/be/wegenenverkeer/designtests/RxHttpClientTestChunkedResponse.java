@@ -39,7 +39,7 @@ public class RxHttpClientTestChunkedResponse {
                 .setMethod("GET")
                 .setUrlRelativetoBase("/10")
                 .build();
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<ServerResponseElement> observable = client.executeObservably(request);
 
         TestSubscriber<ServerResponseElement> subscriber = new TestSubscriber<>();
         observable.subscribe(subscriber);
@@ -66,7 +66,7 @@ public class RxHttpClientTestChunkedResponse {
                 .setMethod("GET")
                 .setUrlRelativetoBase("/10")
                 .build();
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<ServerResponseElement> observable = client.executeObservably(request);
 
         CollectingSubscriber<String> subscriber = new CollectingSubscriber<>((bytes) -> new String(bytes));
         observable.subscribe(subscriber);
@@ -86,7 +86,7 @@ public class RxHttpClientTestChunkedResponse {
                 .setMethod("GET")
                 .setUrlRelativetoBase("/1000")
                 .build();
-        Observable<ServerResponseElement> observable = client.executeRequest(request);
+        Observable<ServerResponseElement> observable = client.executeObservably(request);
 
         CollectingSubscriber<String> subscriber = new CollectingSubscriber<>((bytes) -> new String(bytes));
         observable.subscribe(subscriber);
@@ -111,7 +111,7 @@ public class RxHttpClientTestChunkedResponse {
                 .setUrlRelativetoBase("/10")
                 .build();
 
-        Observable<String> observable = client.executeRequest(request, (bytes) -> new String(bytes) );
+        Observable<String> observable = client.executeObservably(request, (bytes) -> new String(bytes));
 
         TestSubscriber<String> subscriber = new TestSubscriber<>();
         observable.subscribe(subscriber);
@@ -137,7 +137,7 @@ public class RxHttpClientTestChunkedResponse {
                 .build();
 
         final AtomicInteger counter = new AtomicInteger(0);
-        Observable<String> observable = client.executeRequest(request, (bytes) -> {
+        Observable<String> observable = client.executeObservably(request, (bytes) -> {
                     if (counter.incrementAndGet() > 4) {
                         throw new RuntimeException("FORCED ERROR");
                     }
@@ -169,7 +169,7 @@ public class RxHttpClientTestChunkedResponse {
                 .setMethod("GET")
                 .setUrlRelativetoBase("/1000")
                 .build();
-        Observable<String> observable = client.executeRequest(request, (bytes) -> new String(bytes));
+        Observable<String> observable = client.executeObservably(request, (bytes) -> new String(bytes));
 
 
         TestSubscriber<String> subscriber = new TestSubscriber<>();
@@ -196,7 +196,7 @@ public class RxHttpClientTestChunkedResponse {
         //request 1000 objects, but only take 10.
         //the connection to the server is immediately closed.
         Observable<String> observable =
-                client.executeRequest(request, (bytes) -> new String(bytes))
+                client.executeObservably(request, (bytes) -> new String(bytes))
                         .take(10);
 
         TestSubscriber<String> subscriber = new TestSubscriber<>();

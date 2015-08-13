@@ -9,11 +9,15 @@ import rx.subjects.BehaviorSubject;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
+import static be.wegenenverkeer.rxhttp.CompleteResponseHandler.withCompleteResponse;
+import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
+
 /**
- * A REST API Client
+ * A Reactive HTTP Client
  * Created by Karel Maesen, Geovise BVBA on 05/12/14.
  */
 public class RxHttpClient {
@@ -31,10 +35,49 @@ public class RxHttpClient {
 
 
     /**
+     ** Executes a request and returns an Observable for the complete response.
+     *
+     *
+     */
+    public <F> CompletableFuture<F> execute(ClientRequest request, Function<ServerResponse, F> transformer ){
+        logger.info("Sending Request: " + request.toString());
+        //Note: we don't use Observable.toBlocking().toFuture()
+        //because we need a CompletableFuture so that interop with Scala is possible
+        final CompletableFuture<F> future = new CompletableFuture<>();
+
+        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandler<F>(){
+            @Override
+            public F onCompleted(Response response) throws Exception {
+                try {
+                    withCompleteResponse(response,
+                            (r) -> {
+                                F transformed = transformer.apply(wrap(response));
+                                future.complete(transformed);
+                            },
+                            future::completeExceptionally,
+                            future::completeExceptionally
+                    );
+                } catch(Throwable t) {
+                    logger.error("onError handler failed: " + t.getMessage(), t);
+                    future.completeExceptionally(t);
+                }
+                return null;
+            }
+
+            @Override
+            public void onThrowable(Throwable t) {
+                super.onThrowable(t);
+                future.completeExceptionally(t);
+            }
+        });
+        return future;
+    }
+
+    /**
      * Executes a request and returns an Observable for the complete response.
      * <p>
      * When available, the complete response will be presented to any subscriber. Only one HTTP request
-     * will e made, regardless of the number of subscribers.
+     * will be made, regardless of the number of subscribers.
      *
      * @param request     the request to send
      * @param transformer a function that transforms the {@link ServerResponse} to a value of F
@@ -58,7 +101,7 @@ public class RxHttpClient {
      * @return a cold observable of ServerResponseElements
      * @see Observable#defer
      */
-    public Observable<ServerResponseElement> executeRequest(ClientRequest request) {
+    public Observable<ServerResponseElement> executeObservably(ClientRequest request) {
         return Observable.defer(() -> {
             BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
             innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
@@ -73,10 +116,12 @@ public class RxHttpClient {
      * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
      *
      * @param request the request to send
+     * @param transform the function that transforms the response body (chunks) into objects of type F
+     * @param <F> return type of the transform
      * @return a cold observable of ServerResponseElements
      * @see Observable#defer
      */
-    public <F> Observable<F> executeRequest(ClientRequest request, Function<byte[], F> transformer) {
+    public <F> Observable<F> executeObservably(ClientRequest request, Function<byte[], F> transform) {
         return Observable.defer(() -> {
             BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
             innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
@@ -85,19 +130,42 @@ public class RxHttpClient {
                     .map(el -> el.match(
                             e -> null, //won't happen, is filtered
                             e -> null, //won't happen, is filtered
-                            e -> transformer.apply(e.getBodyPartBytes()),
-                            e -> transformer.apply(e.getResponseBodyAsBytes())));
+                            e -> transform.apply(e.getBodyPartBytes()),
+                            e -> transform.apply(e.getResponseBodyAsBytes())));
         });
     }
 
+    /**
+     * Returns the base URL that this client connects to.
+     *
+     * @return the base URL that this client connects to.
+     */
     public String getBaseUrl() {
         return this.config.getBaseUrl();
     }
 
+    /**
+     * Returns the configured default ACCEPT header for requests created using this instance's
+     * {@code ClientRequestBuilder}s.
+     *
+     * @return the configured default ACCEPT header for requests created using this instance's {@code ClientRequestBuilder}s.
+     */
     public String getAccept() {
         return config.getAccept();
     }
 
+    /**
+     * Closes the underlying connection
+     */
+    public void close(){
+        this.innerClient.close();
+    }
+
+    /**
+     * Returns a new {@code ClientRequestBuilder}.
+     *
+     * @return a new {@code ClientRequestBuilder}.
+     */
     public ClientRequestBuilder requestBuilder() {
         return new ClientRequestBuilder(this);
     }
@@ -109,7 +177,7 @@ public class RxHttpClient {
         private String Accept = "application/json";
 
         public void setBaseUrl(String baseUrl) {
-            this.baseUrl = baseUrl;
+            this.baseUrl = chopLastForwardSlash(baseUrl);
         }
 
         public String getBaseUrl() {
@@ -123,9 +191,21 @@ public class RxHttpClient {
         public void setAccept(String accept) {
             Accept = accept;
         }
+
+        private static String chopLastForwardSlash(String url) {
+            if (url.charAt(url.length() - 1) == '/') {
+                url = url.substring(0, url.length() - 1);
+            }
+            return url;
+        }
+
     }
 
 
+    /**
+     * A Builder for {@code RxHttpClient} builders.
+     *
+     */
     static public class Builder {
 
         private AsyncHttpClientConfig.Builder configBuilder = new AsyncHttpClientConfig.Builder();
@@ -254,7 +334,7 @@ public class RxHttpClient {
 //        }
 
 //        /**
-//         * Remove an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeRequest(com.ning.http.client.Request)}
+//         * Remove an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeObservably(com.ning.http.client.Request)}
 //         *
 //         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
 //         * @return this
@@ -283,7 +363,7 @@ public class RxHttpClient {
         /**
          * Configures this AHC instance to use relative URIs instead of absolute ones when talking with a SSL proxy or WebSocket proxy.
          *
-         * @param useRelativeURIsWithConnectProxies
+         * @param useRelativeURIsWithConnectProxies use relative URIs with connect proxies
          * @return this
          * @since 1.8.13
          */
@@ -440,7 +520,7 @@ public class RxHttpClient {
         }
 
 //        /**
-//         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeRequest(com.ning.http.client.Request)}
+//         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeObservably(com.ning.http.client.Request)}
 //         *
 //         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
 //         * @return this

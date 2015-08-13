@@ -17,4 +17,4 @@ env:
   - secure: aMx1htKJD2dlUWlF73DRVWGOU+WoiL3dtkxg/p1DP6erTyd/BYiW+Z3oPy3mgymD375GICjv/YtllkXB2EFLjPFKli53vOTwBfR5cx/P5/00Cc/lwixERxKgBKOFdLi3hs30x7ecPNaBuh8DYHGqCtsqIn8geh7audqNO1diiac=
 
 after_success:
-- '[[ $TRAVIS_BRANCH == "develop" ]] && { sbt publish; };'
+- '[[ $TRAVIS_BRANCH == "develop" ]] && { sbt +publish; };'

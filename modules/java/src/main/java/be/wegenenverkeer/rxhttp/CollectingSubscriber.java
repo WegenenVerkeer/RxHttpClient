@@ -3,12 +3,18 @@ package be.wegenenverkeer.rxhttp;
 import rx.Subscriber;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
 /**
+ * A {@link Subscriber} that collects all parts of a response body, after transformation, into a List.
+ *
+ *  <p>CollectingSubscribers are definitely not thread-safe</p>
+ *
+ * @param <T> the Type to which each response body part is transformed to.
  *
  * Created by Karel Maesen, Geovise BVBA on 19/12/14.
  */
@@ -20,12 +26,17 @@ public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
 
     final private MutableResponseProcessor processor;
 
-    public CollectingSubscriber(Function<byte[], T> handlePart){
+    /**
+     * Constructs an instance
+     *
+     * @param transformPart the function that transforms the bytes of each response part into an object of type {@code T}
+     */
+    public CollectingSubscriber(Function<byte[], T> transformPart){
         processor = new MutableResponseProcessor() {
             @Override
             void processPart(byte[] bytes) {
                 try {
-                    accumulator.add(handlePart.apply(bytes));
+                    accumulator.add(transformPart.apply(bytes));
                 } catch(Throwable t) {
                     cfuture.completeExceptionally(t);
                 }
@@ -40,7 +51,7 @@ public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
      */
     @Override
     public void onCompleted() {
-        cfuture.complete(accumulator);
+        cfuture.complete(Collections.unmodifiableList(accumulator));
     }
 
     /**
@@ -68,11 +79,11 @@ public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
      */
     @Override
     public void onNext(ServerResponseElement serverResponseElement) {
-        processor.process(serverResponseElement, processor);
+        processor.process(serverResponseElement);
     }
 
     /**
-     * Unsubscribes from the observer, and returns the items already received.
+     * Unsubscribes from the observer and returns the items already received.
      *
      * @return the items already received.
      */
@@ -81,6 +92,11 @@ public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
         return new ArrayList<>(accumulator);
     }
 
+    /**
+     * Returns the future list of response parts, after transformation
+     *
+     * @return the future list of response parts, after transformation
+     */
     public Future<List<T>> collect() {
         return cfuture;
     }

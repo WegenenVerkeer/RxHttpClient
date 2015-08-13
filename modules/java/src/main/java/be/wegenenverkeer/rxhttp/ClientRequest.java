@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Wraps a {@link Request} into a more limited interface.
  *
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
@@ -117,7 +118,7 @@ public class ClientRequest {
         return request.getBodyEncoding();
     }
 
-    public Request unwrap() {
+    Request unwrap() {
         return this.request;
     }
 

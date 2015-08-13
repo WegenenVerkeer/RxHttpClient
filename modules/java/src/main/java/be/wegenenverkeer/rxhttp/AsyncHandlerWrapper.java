@@ -9,12 +9,19 @@ import rx.subjects.BehaviorSubject;
 import java.util.Optional;
 
 /**
+ *  A {@link AsyncHandler} that pushes received items to a specified {@link BehaviorSubject}
+ *
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
 
     final private BehaviorSubject<ServerResponseElement> subject;
 
+    /**
+     * Constructs an instance.
+     *
+     * @param subject
+     */
     AsyncHandlerWrapper(BehaviorSubject<ServerResponseElement> subject) {
         this.subject = subject;
     }
@@ -44,17 +51,13 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
             onCompleted(); //send the uncompleted message
             return STATE.ABORT;
         }
-        subject.onNext( new ServerResponseBodyPart(){
-
-            @Override
-            public byte[] getBodyPartBytes() {
-                return bodyPart.getBodyPartBytes();
-            }
-        });
+        subject.onNext(
+                (ServerResponseBodyPart)( bodyPart::getBodyPartBytes )
+            );
         return STATE.CONTINUE;
     }
 
-    //we don't check for hasObservers in the onStatusReceived() and onHeadersReceived(). This garantuees that
+    //we don't check for hasObservers in the onStatusReceived() and onHeadersReceived(). This guarantees that
     //processing continues until some response body parts are received, after which the connection can be
     //marked as to be closed.
 
@@ -70,9 +73,9 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
         final int statuscode = responseStatus.getStatusCode();
 
         if (statuscode >= 400 && statuscode < 500) {
-            subject.onError(new HttpClientError(statuscode, responseStatus.getStatusText()));
+            subject.onError(new HttpClientError(statuscode, null, responseStatus.getStatusText()));
         } else if (statuscode >= 500) {
-            subject.onError(new HttpServerError(statuscode, responseStatus.getStatusText()));
+            subject.onError(new HttpServerError(statuscode, null, responseStatus.getStatusText()));
         }
 
         subject.onNext(new ServerResponseStatus() {

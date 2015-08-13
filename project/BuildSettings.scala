@@ -1,3 +1,4 @@
+import com.typesafe.sbt.SbtSite.site
 import sbt._
 import sbt.Configuration
 import sbt.Keys._
@@ -10,8 +11,8 @@ trait BuildSettings {
   import Dependencies._
   val Organization = "be.wegenenverkeer"
   
-  val Version = "0.1.0-SNAPSHOT"
-  val ScalaVersion = "2.10.3"
+  val Version = "0.2.0"
+  val ScalaVersion = "2.11.7"
   val ScalaBuildOptions = Seq("-unchecked", "-deprecation", "-feature",
     "-language:reflectiveCalls",
     "-language:implicitConversions",
@@ -29,6 +30,7 @@ trait BuildSettings {
     name := projectName,
     version := Version,
     scalaVersion := ScalaVersion,
+    crossScalaVersions := Seq("2.10.3", "2.11.7"),
     scalacOptions := ScalaBuildOptions,
     parallelExecution := false,
     resolvers +=  "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
@@ -63,6 +65,15 @@ trait BuildSettings {
     credentials ++= publishingCredentials
   )
 
+  lazy val siteSettings =
+    site.settings ++
+      site.includeScaladoc()
+
+  lazy val extraJavaSettings = Seq(
+    crossPaths := false
+  )
+
+
   def buildSettings(projectName:String, extraDependencies:Seq[ModuleID] = Seq()) = {
     Defaults.defaultSettings ++
       projectSettings(projectName, extraDependencies) ++
@@ -70,6 +81,8 @@ trait BuildSettings {
       publishSettings ++
       jacoco.settings
   }
+
+
 
   lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
       <licenses>

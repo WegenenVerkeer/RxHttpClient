@@ -7,6 +7,8 @@ import rx.Observable;
 import rx.observers.TestSubscriber;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -28,7 +30,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         stubFor(get(urlPathEqualTo("/contacts?q=test"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT/3)
+                .willReturn(aResponse().withFixedDelay(200)
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(expectBody)));
@@ -54,6 +56,33 @@ public class RxHttpClientDesignTests extends UsingWireMock{
 
 
     }
+
+    @Test
+    public void GETHappyPathWithFuture() throws InterruptedException, TimeoutException, ExecutionException {
+        //set up stub
+        String expectBody = "{ 'contacts': [1,2,3] }";
+        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+                .withQueryParam("q", equalTo("test"))
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(aResponse().withFixedDelay(200)
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(expectBody)));
+
+        //set up use case
+        String path = "/contacts";
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase(path)
+                .addQueryParam("q", "test")
+                .build();
+
+        Future<String> f = client.execute(request, ServerResponse::getResponseBody);
+        String result = f.get(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        assertEquals(expectBody, result);
+
+    }
+
 
     @Test
     public void demonstrateComposableObservable() throws InterruptedException {
@@ -169,8 +198,16 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         //set up stub
         stubFor(get(urlEqualTo("/contacts"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT * 2)
+                .willReturn(aResponse().withFixedDelay(500)
                         .withStatus(200)));
+
+        //set up client with very low connection time-out values
+        RxHttpClient client = new RxHttpClient.Builder()
+                .setRequestTimeout(100)
+                .setMaxConnections(1)
+                .setAccept("application/json")
+                .setBaseUrl("http://localhost:" + port)
+                .build();
 
         //set up use case
         String path = "/contacts";
@@ -180,7 +217,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         TestSubscriber<String> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
-        testsubscriber.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        testsubscriber.awaitTerminalEvent(1000, TimeUnit.MILLISECONDS);
 
         List onErrorEvents = testsubscriber.getOnErrorEvents();
         assertFalse(onErrorEvents.isEmpty());
