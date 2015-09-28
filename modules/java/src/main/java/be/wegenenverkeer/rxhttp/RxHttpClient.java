@@ -1,6 +1,9 @@
 package be.wegenenverkeer.rxhttp;
 
 import com.ning.http.client.*;
+import com.ning.http.client.filter.IOExceptionFilter;
+import com.ning.http.client.filter.RequestFilter;
+import com.ning.http.client.filter.ResponseFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -441,17 +444,17 @@ public class RxHttpClient {
             return this;
         }
 
-//        /**
-//         * Add an {@link com.ning.http.client.filter.ResponseFilter} that will be invoked as soon as the response is
-//         * received, and before {@link com.ning.http.client.AsyncHandler#onStatusReceived(com.ning.http.client.HttpResponseStatus)}.
-//         *
-//         * @param responseFilter an {@link com.ning.http.client.filter.ResponseFilter}
-//         * @return this
-//         */
-//        public RestClient.Builder addResponseFilter(ResponseFilter responseFilter) {
-//            configBuilder.addResponseFilter(responseFilter);
-//            return this;
-//        }
+        /**
+         * Add an {@link com.ning.http.client.filter.ResponseFilter} that will be invoked as soon as the response is
+         * received, and before {@link com.ning.http.client.AsyncHandler#onStatusReceived(com.ning.http.client.HttpResponseStatus)}.
+         *
+         * @param responseFilter an {@link com.ning.http.client.filter.ResponseFilter}
+         * @return {@link RxHttpClient.Builder}
+         */
+        public RxHttpClient.Builder addResponseFilter(ResponseFilter responseFilter) {
+            configBuilder.addResponseFilter(responseFilter);
+            return this;
+        }
 
         /**
          * Set the maximum number of HTTP redirect
@@ -519,28 +522,28 @@ public class RxHttpClient {
             return this;
         }
 
-//        /**
-//         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeObservably(com.ning.http.client.Request)}
-//         *
-//         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
-//         * @return this
-//         */
-//        public RestClient.Builder addRequestFilter(RequestFilter requestFilter) {
-//            configBuilder.addRequestFilter(requestFilter);
-//            return this;
-//        }
+        /**
+         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeRequest(com.ning.http.client.Request)}
+         *
+         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
+         * @return this
+         */
+        public RxHttpClient.Builder addRequestFilter(RequestFilter requestFilter) {
+            configBuilder.addRequestFilter(requestFilter);
+            return this;
+        }
 
-//        /**
-//         * Add an {@link com.ning.http.client.filter.IOExceptionFilter} that will be invoked when an {@link java.io.IOException}
-//         * occurs during the download/upload operations.
-//         *
-//         * @param ioExceptionFilter an {@link com.ning.http.client.filter.ResponseFilter}
-//         * @return this
-//         */
-//        public RestClient.Builder addIOExceptionFilter(IOExceptionFilter ioExceptionFilter) {
-//            configBuilder.addIOExceptionFilter(ioExceptionFilter);
-//            return this;
-//        }
+        /**
+         * Add an {@link com.ning.http.client.filter.IOExceptionFilter} that will be invoked when an {@link java.io.IOException}
+         * occurs during the download/upload operations.
+         *
+         * @param ioExceptionFilter an {@link com.ning.http.client.filter.ResponseFilter}
+         * @return this
+         */
+        public RxHttpClient.Builder addIOExceptionFilter(IOExceptionFilter ioExceptionFilter) {
+            configBuilder.addIOExceptionFilter(ioExceptionFilter);
+            return this;
+        }
 
         /**
          * Set to false if you don't want the query parameters removed when a redirect occurs.
