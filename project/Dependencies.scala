@@ -25,17 +25,16 @@ object Dependencies {
   val javaDependencies = commonDependencies ++ Seq()
 
   val scalaDependencies = commonDependencies ++ Seq(
-    rxscala
+    rxscala,
+    specs2
   )
 
   val mainTestDependencies = Seq(
     junit,
-    specs2,
     slf4jSimple,
     wiremock,
     junitInterface,
     jsonPath
   )
-
 
 }

@@ -70,7 +70,8 @@ trait BuildSettings {
       site.includeScaladoc()
 
   lazy val extraJavaSettings = Seq(
-    crossPaths := false
+    crossPaths := false,
+    autoScalaLibrary := false
   )
 
 
