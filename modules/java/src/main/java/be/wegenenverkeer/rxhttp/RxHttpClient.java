@@ -76,8 +76,9 @@ public class RxHttpClient {
     /**
      * Executes a request and returns an Observable for the complete response.
      * <p>
-     * When available, the complete response will be presented to any subscriber. Only one HTTP request
-     * will be made, regardless of the number of subscribers.
+     * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
+     * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
+     * </p>
      *
      * @param request     the request to send
      * @param transformer a function that transforms the {@link ServerResponse} to a value of F
@@ -85,16 +86,18 @@ public class RxHttpClient {
      * @return An Observable that returns the transformed server response.
      */
     public <F> Observable<F> executeToCompletion(ClientRequest request, Function<ServerResponse, F> transformer) {
-        logger.info("Sending Request: " + request.toString());
-        AsyncSubject<F> subject = AsyncSubject.create();
-        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, transformer));
-        return subject;
+        return Observable.defer( () -> {
+            logger.info("Sending Request: " + request.toString());
+            AsyncSubject<F> subject = AsyncSubject.create();
+            innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, transformer));
+            return subject;
+        });
     }
 
     /**
      * Returns a "cold" Observable for a stream of {@link ServerResponseElement}s.
      * <p>
-     * The returned Observable is "deferred", i.e. on each subscription a new HTTP request is made
+     * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
      * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
      *
      * @param request the request to send
@@ -112,7 +115,7 @@ public class RxHttpClient {
     /**
      * Returns a "cold" Observable for a stream of {@code T}.
      * <p>
-     * The returned Observable is "deferred", i.e. on each subscription a new HTTP request is made
+     * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
      * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
      *
      * @param request the request to send
@@ -541,17 +544,6 @@ public class RxHttpClient {
 //            configBuilder.addIOExceptionFilter(ioExceptionFilter);
 //            return this;
 //        }
-
-        /**
-         * Set to false if you don't want the query parameters removed when a redirect occurs.
-         *
-         * @param removeQueryParamOnRedirect
-         * @return this
-         */
-        public RxHttpClient.Builder setRemoveQueryParamsOnRedirect(boolean removeQueryParamOnRedirect) {
-            configBuilder.setRemoveQueryParamsOnRedirect(removeQueryParamOnRedirect);
-            return this;
-        }
 
         /**
          * Disable automatic url escaping

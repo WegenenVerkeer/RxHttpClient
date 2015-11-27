@@ -38,7 +38,7 @@ abstract public class UsingWireMock {
 
         client = new RxHttpClient.Builder()
                 .setRequestTimeout(REQUEST_TIME_OUT)
-                .setMaxConnections(10)
+                .setMaxConnections(3)
                 .setAccept("application/json")
                 .setBaseUrl("http://localhost:" + port)
                 .build();

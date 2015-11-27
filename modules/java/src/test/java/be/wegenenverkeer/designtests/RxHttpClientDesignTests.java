@@ -83,58 +83,6 @@ public class RxHttpClientDesignTests extends UsingWireMock{
 
     }
 
-
-    @Test
-    public void demonstrateComposableObservable() throws InterruptedException {
-        //set up stubs
-        String expectBody = "{ 'contacts': ['contacts/1','contacts/2','contacts/3'] }";
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
-                .withQueryParam("q", equalTo("test"))
-                .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(10)
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(expectBody)));
-        stubFor(get(urlPathEqualTo("/contacts/1")).withHeader("Accept", equalTo("application/json")).willReturn(aResponse().withStatus(404).withBody("ONE")));
-        stubFor(get(urlPathEqualTo("/contacts/2")).withHeader("Accept", equalTo("application/json")).willReturn(aResponse().withStatus(200).withBody("TWO")));
-        stubFor(get(urlPathEqualTo("/contacts/3")).withHeader("Accept", equalTo("application/json")).willReturn(aResponse().withStatus(200).withBody("THREE")));
-
-
-
-        //use case
-        String path = "/contacts";
-        ClientRequest request = client.requestBuilder()
-                .setMethod("GET")
-                .setUrlRelativetoBase(path)
-                .addQueryParam("q", "test")
-                .build();
-
-        Function<String, Observable<String>> followLink  = (String contactUrl) -> {
-            ClientRequest followUp = client.requestBuilder()
-                    .setMethod("GET")
-                    .setUrlRelativetoBase(contactUrl).build();
-            return client
-                    .executeToCompletion(followUp, ServerResponse::getResponseBody)
-                    .onErrorResumeNext(Observable.just("ERROR"));
-        };
-
-        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody)
-                .flatMap(body -> {
-                    List<String> l = JsonPath.read(body, "$.contacts");
-                    return Observable.from(l);
-                }).flatMap(contactUrl -> followLink.apply(contactUrl));
-
-
-        //verify behaviour
-        TestSubscriber<String> sub = new TestSubscriber<>();
-        observable.subscribe(sub);
-        sub.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
-
-        sub.assertNoErrors();
-        assertEquals(new HashSet<String>(items("ERROR", "TWO", "THREE")), new HashSet<String>(sub.getOnNextEvents()));
-
-    }
-
     @Test
     public void testHttp4xxResponseOnGET() throws InterruptedException {
         //no stub set-up so we always get a 404 response.
