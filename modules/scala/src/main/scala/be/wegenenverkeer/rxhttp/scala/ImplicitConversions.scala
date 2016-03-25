@@ -32,6 +32,8 @@ class RxHttpClient(val inner: JRxHttpClient) {
     p.future
   }
 
+  def close() : Unit = this.inner.close()
+
   def execute[T](req: ClientRequest, transform: ServerResponse => T) : Future[T] =
     fromJavaFuture(inner.execute[T](req, toJavaFunction(transform)))
 
@@ -50,7 +52,7 @@ class RxHttpClient(val inner: JRxHttpClient) {
 
 
 /**
- * Implicit conversion of RxHttpClient which adds methods that return {@code rx.lang.scala.Observables}.
+ * Implicit conversion of RxHttpClient which adds methods that return [[rx.lang.scala.Observable]]s.
  *
  * Created by Karel Maesen, Geovise BVBA on 22/12/14.
  */
@@ -63,11 +65,10 @@ object ImplicitConversions {
   }
 
 
-  implicit def wrap( c : JRxHttpClient) = new JavaClientWrapper{
+  implicit def wrap( c : JRxHttpClient) : JavaClientWrapper = new JavaClientWrapper{
     val inner = c
   }
 
   implicit def unwrap(client: RxHttpClient) : JRxHttpClient = client.inner
 
 }
-
