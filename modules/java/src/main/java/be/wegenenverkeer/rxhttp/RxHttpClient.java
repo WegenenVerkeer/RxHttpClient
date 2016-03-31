@@ -232,11 +232,26 @@ public class RxHttpClient {
         }
 
 
+        /**
+         * Sets the default Accept request-header for requests built using this instance.
+         *
+         * @see <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html">W3C HTTP 1.1 specs</a>.
+         *
+         * @param acceptHeaderValue the Media-range and accept-params to use as value for the Accept request-header field
+         * @return
+         */
         public RxHttpClient.Builder setAccept(String acceptHeaderValue) {
             rcConfig.setAccept(acceptHeaderValue);
             return this;
         }
 
+        /**
+         * Sets the base URL for this client.
+         *
+         * <p>The base url will be prepended to any relative URL path specified in the {@code RequestBuilder}</p>
+         * @param url the base URL for this instance
+         * @return
+         */
         public RxHttpClient.Builder setBaseUrl(String url) {
             rcConfig.setBaseUrl(url);
             return this;
