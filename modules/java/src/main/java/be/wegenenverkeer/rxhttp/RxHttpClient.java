@@ -9,8 +9,13 @@ import rx.subjects.BehaviorSubject;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 import static be.wegenenverkeer.rxhttp.CompleteResponseHandler.withCompleteResponse;
@@ -174,24 +179,24 @@ public class RxHttpClient {
     }
 
 
-    static class RestClientConfig {
+    private static class RestClientConfig {
 
-        private String baseUrl = "http://localhost";
+        private String baseUrl = "";
         private String Accept = "application/json";
 
-        public void setBaseUrl(String baseUrl) {
+        void setBaseUrl(String baseUrl) {
             this.baseUrl = chopLastForwardSlash(baseUrl);
         }
 
-        public String getBaseUrl() {
+        String getBaseUrl() {
             return baseUrl;
         }
 
-        public String getAccept() {
+        String getAccept() {
             return Accept;
         }
 
-        public void setAccept(String accept) {
+        void setAccept(String accept) {
             Accept = accept;
         }
 
@@ -215,7 +220,15 @@ public class RxHttpClient {
         final private RestClientConfig rcConfig = new RestClientConfig();
 
         public RxHttpClient build() {
-            return new RxHttpClient(new AsyncHttpClient(configBuilder.build()), rcConfig);
+            AsyncHttpClientConfig config = configBuilder.build();
+            BuildValidation validation = validate(config);
+
+            validation.logWarnings(logger);
+            if (validation.hasErrors()) {
+                throw new IllegalStateException(validation.getErrorMessage());
+            }
+
+            return new RxHttpClient(new AsyncHttpClient(config), rcConfig);
         }
 
 
@@ -227,6 +240,31 @@ public class RxHttpClient {
         public RxHttpClient.Builder setBaseUrl(String url) {
             rcConfig.setBaseUrl(url);
             return this;
+        }
+
+        /**
+         * Validates the Builder (used before building the client)
+         *
+         * @param config the AsyncHttpClient config object
+         * @return a {@code BuildValidation} containing all Errors and Warnings
+         */
+        private BuildValidation validate(AsyncHttpClientConfig config){
+            BuildValidation bv = new BuildValidation();
+
+            if (rcConfig.baseUrl.isEmpty()) {
+                bv.addError( "No baseURL is set" );
+            }
+
+            try {
+                new URL( rcConfig.baseUrl );
+            } catch (MalformedURLException e) {
+                bv.addError( "Malformed URL: " + e.getMessage() );
+            }
+
+            if (!config.isAllowPoolingConnections()) {
+                bv.addWarning("RxHttpClient for " + rcConfig.baseUrl + " has connection pooling disabled");
+            }
+            return bv;
         }
 
 
@@ -277,6 +315,8 @@ public class RxHttpClient {
         /**
          * Set the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
          * asynchronous response.
+         *
+         *<p>By default a Cached Threadpool will be used, that will create threads as needed (see {@link Executors#newCachedThreadPool()})</p>
          *
          * @param applicationThreadPool the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
          *                              asynchronous response.
@@ -375,16 +415,16 @@ public class RxHttpClient {
             return this;
         }
 
-        /**
-         * Set the maximum number of connections per hosts an {@link com.ning.http.client.AsyncHttpClient} can handle.
-         *
-         * @param maxConnectionsPerHost the maximum number of connections per host an {@link com.ning.http.client.AsyncHttpClient} can handle.
-         * @return a {@link RxHttpClient.Builder}
-         */
-        public RxHttpClient.Builder setMaxConnectionsPerHost(int maxConnectionsPerHost) {
-            configBuilder.setMaxConnectionsPerHost(maxConnectionsPerHost);
-            return this;
-        }
+//        /**
+//         * Set the maximum number of connections per hosts an {@link com.ning.http.client.AsyncHttpClient} can handle.
+//         *
+//         * @param maxConnectionsPerHost the maximum number of connections per host an {@link com.ning.http.client.AsyncHttpClient} can handle.
+//         * @return a {@link RxHttpClient.Builder}
+//         */
+//        public RxHttpClient.Builder setMaxConnectionsPerHost(int maxConnectionsPerHost) {
+//            configBuilder.setMaxConnectionsPerHost(maxConnectionsPerHost);
+//            return this;
+//        }
 
         public RxHttpClient.Builder setEnabledCipherSuites(String[] enabledCipherSuites) {
             configBuilder.setEnabledCipherSuites(enabledCipherSuites);
@@ -392,7 +432,9 @@ public class RxHttpClient {
         }
 
         /**
-         * Return true is if connections pooling is enabled.
+         * Set whether connections pooling is enabled.
+         *
+         * <p>Default is set to true</p>
          *
          * @param allowPoolingSslConnections true if enabled
          * @return this
@@ -492,6 +534,8 @@ public class RxHttpClient {
 
         /**
          * Set the maximum time in millisecond connection can be added to the pool for further reuse
+         *
+         * <p> Default is -1 (no TTL set)</p>
          *
          * @param connectionTTL the maximum time in millisecond connection can be added to the pool for further reuse
          * @return a {@link RxHttpClient.Builder}
@@ -593,6 +637,8 @@ public class RxHttpClient {
          * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} will keep connection
          * idle in pool.
          *
+         * <p>Default is 60000 millis (1 min.)</p>
+         *
          * @param pooledConnectionIdleTimeout@return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setPooledConnectionIdleTimeout(int pooledConnectionIdleTimeout) {
@@ -624,5 +670,45 @@ public class RxHttpClient {
         }
     }
 
+    static private class BuildValidation {
+        List<String> errors = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+
+        void addError(String errMsg) {
+            errors.add(errMsg);
+        }
+
+        void addWarning(String warningMsg) {
+            warnings.add(warningMsg);
+        }
+
+        String getErrorMessage() {
+            StringBuilder builder = new StringBuilder();
+            for (String msg : errors) {
+                builder.append(msg).append("\n");
+            }
+            return chop(builder.toString());
+        }
+
+        boolean hasWarnings() {
+            return !warnings.isEmpty();
+        }
+
+        boolean hasErrors() {
+            return !errors.isEmpty();
+        }
+
+        void logWarnings(Logger logger) {
+            for (String msg: warnings){
+                logger.warn(msg);
+            }
+        }
+
+        private String chop(String s) {
+            if (s == null || s.isEmpty()) return s;
+            return s.substring(0, s.length() - 1);
+        }
+
+    }
 
 }
