@@ -11,7 +11,7 @@ trait BuildSettings {
   import Dependencies._
   val Organization = "be.wegenenverkeer"
   
-  val Version = "0.2.0"
+  val Version = "0.3.0"
   val ScalaVersion = "2.11.7"
   val ScalaBuildOptions = Seq("-unchecked", "-deprecation", "-feature",
     "-language:reflectiveCalls",
@@ -70,7 +70,8 @@ trait BuildSettings {
       site.includeScaladoc()
 
   lazy val extraJavaSettings = Seq(
-    crossPaths := false
+    crossPaths := false,
+    autoScalaLibrary := false
   )
 
 

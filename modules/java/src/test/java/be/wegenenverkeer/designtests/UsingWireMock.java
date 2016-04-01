@@ -19,7 +19,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 abstract public class UsingWireMock {
 
 
-    static final int REQUEST_TIME_OUT = 1000;
+    static final int REQUEST_TIME_OUT = 5000;
     static final int DEFAULT_TIME_OUT = REQUEST_TIME_OUT * 5;
 
     static int port = 8089;
@@ -38,7 +38,7 @@ abstract public class UsingWireMock {
 
         client = new RxHttpClient.Builder()
                 .setRequestTimeout(REQUEST_TIME_OUT)
-                .setMaxConnections(10)
+                .setMaxConnections(3)
                 .setAccept("application/json")
                 .setBaseUrl("http://localhost:" + port)
                 .build();

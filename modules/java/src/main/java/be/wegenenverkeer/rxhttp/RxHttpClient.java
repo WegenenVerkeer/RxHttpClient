@@ -9,8 +9,13 @@ import rx.subjects.BehaviorSubject;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 import static be.wegenenverkeer.rxhttp.CompleteResponseHandler.withCompleteResponse;
@@ -76,8 +81,9 @@ public class RxHttpClient {
     /**
      * Executes a request and returns an Observable for the complete response.
      * <p>
-     * When available, the complete response will be presented to any subscriber. Only one HTTP request
-     * will be made, regardless of the number of subscribers.
+     * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
+     * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
+     * </p>
      *
      * @param request     the request to send
      * @param transformer a function that transforms the {@link ServerResponse} to a value of F
@@ -85,16 +91,18 @@ public class RxHttpClient {
      * @return An Observable that returns the transformed server response.
      */
     public <F> Observable<F> executeToCompletion(ClientRequest request, Function<ServerResponse, F> transformer) {
-        logger.info("Sending Request: " + request.toString());
-        AsyncSubject<F> subject = AsyncSubject.create();
-        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, transformer));
-        return subject;
+        return Observable.defer( () -> {
+            logger.info("Sending Request: " + request.toString());
+            AsyncSubject<F> subject = AsyncSubject.create();
+            innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, transformer));
+            return subject;
+        });
     }
 
     /**
      * Returns a "cold" Observable for a stream of {@link ServerResponseElement}s.
      * <p>
-     * The returned Observable is "deferred", i.e. on each subscription a new HTTP request is made
+     * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
      * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
      *
      * @param request the request to send
@@ -112,7 +120,7 @@ public class RxHttpClient {
     /**
      * Returns a "cold" Observable for a stream of {@code T}.
      * <p>
-     * The returned Observable is "deferred", i.e. on each subscription a new HTTP request is made
+     * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
      * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
      *
      * @param request the request to send
@@ -171,24 +179,24 @@ public class RxHttpClient {
     }
 
 
-    static class RestClientConfig {
+    private static class RestClientConfig {
 
-        private String baseUrl = "http://localhost";
+        private String baseUrl = "";
         private String Accept = "application/json";
 
-        public void setBaseUrl(String baseUrl) {
+        void setBaseUrl(String baseUrl) {
             this.baseUrl = chopLastForwardSlash(baseUrl);
         }
 
-        public String getBaseUrl() {
+        String getBaseUrl() {
             return baseUrl;
         }
 
-        public String getAccept() {
+        String getAccept() {
             return Accept;
         }
 
-        public void setAccept(String accept) {
+        void setAccept(String accept) {
             Accept = accept;
         }
 
@@ -212,18 +220,77 @@ public class RxHttpClient {
         final private RestClientConfig rcConfig = new RestClientConfig();
 
         public RxHttpClient build() {
-            return new RxHttpClient(new AsyncHttpClient(configBuilder.build()), rcConfig);
+            AsyncHttpClientConfig config = configBuilder.build();
+            BuildValidation validation = validate(config);
+
+            validation.logWarnings(logger);
+            if (validation.hasErrors()) {
+                throw new IllegalStateException(validation.getErrorMessage());
+            }
+
+            return new RxHttpClient(new AsyncHttpClient(config), rcConfig);
         }
 
 
+        /**
+         * Sets the default Accept request-header for requests built using this instance.
+         *
+         * @see <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html">W3C HTTP 1.1 specs</a>.
+         *
+         * @param acceptHeaderValue the Media-range and accept-params to use as value for the Accept request-header field
+         * @return
+         */
         public RxHttpClient.Builder setAccept(String acceptHeaderValue) {
             rcConfig.setAccept(acceptHeaderValue);
             return this;
         }
 
+        /**
+         * Sets the base URL for this client.
+         *
+         * <p>The base url will be prepended to any relative URL path specified in the {@code RequestBuilder}</p>
+         * @param url the base URL for this instance
+         * @return
+         */
         public RxHttpClient.Builder setBaseUrl(String url) {
             rcConfig.setBaseUrl(url);
             return this;
+        }
+
+        /**
+         * Validates the Builder (used before building the client)
+         *
+         * @param config the AsyncHttpClient config object
+         * @return a {@code BuildValidation} containing all Errors and Warnings
+         */
+        private BuildValidation validate(AsyncHttpClientConfig config){
+            BuildValidation bv = new BuildValidation();
+
+            if (rcConfig.baseUrl.isEmpty()) {
+                bv.addError( "No baseURL is set" );
+            }
+
+            try {
+                new URL( rcConfig.baseUrl );
+            } catch (MalformedURLException e) {
+                bv.addError( "Malformed URL: " + e.getMessage() );
+            }
+
+            String messagePrefix = "RxHttpClient for " + rcConfig.baseUrl;
+
+            if (!config.isAllowPoolingConnections()) {
+                bv.addWarning( messagePrefix + " has connection pooling disabled!");
+            }
+
+            if (config.getMaxConnections() < 0 ) {
+                bv.addWarning(messagePrefix + " has no maximum connections set!");
+            }
+
+            if (config.getConnectionTTL() < 0 && config.getPooledConnectionIdleTimeout() < 0) {
+                bv.addWarning(messagePrefix + " has no connection TTL or pool idle timeout set!");
+            }
+
+            return bv;
         }
 
 
@@ -274,6 +341,8 @@ public class RxHttpClient {
         /**
          * Set the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
          * asynchronous response.
+         *
+         *<p>By default a Cached Threadpool will be used, that will create threads as needed (see {@link Executors#newCachedThreadPool()})</p>
          *
          * @param applicationThreadPool the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
          *                              asynchronous response.
@@ -372,16 +441,16 @@ public class RxHttpClient {
             return this;
         }
 
-        /**
-         * Set the maximum number of connections per hosts an {@link com.ning.http.client.AsyncHttpClient} can handle.
-         *
-         * @param maxConnectionsPerHost the maximum number of connections per host an {@link com.ning.http.client.AsyncHttpClient} can handle.
-         * @return a {@link RxHttpClient.Builder}
-         */
-        public RxHttpClient.Builder setMaxConnectionsPerHost(int maxConnectionsPerHost) {
-            configBuilder.setMaxConnectionsPerHost(maxConnectionsPerHost);
-            return this;
-        }
+//        /**
+//         * Set the maximum number of connections per hosts an {@link com.ning.http.client.AsyncHttpClient} can handle.
+//         *
+//         * @param maxConnectionsPerHost the maximum number of connections per host an {@link com.ning.http.client.AsyncHttpClient} can handle.
+//         * @return a {@link RxHttpClient.Builder}
+//         */
+//        public RxHttpClient.Builder setMaxConnectionsPerHost(int maxConnectionsPerHost) {
+//            configBuilder.setMaxConnectionsPerHost(maxConnectionsPerHost);
+//            return this;
+//        }
 
         public RxHttpClient.Builder setEnabledCipherSuites(String[] enabledCipherSuites) {
             configBuilder.setEnabledCipherSuites(enabledCipherSuites);
@@ -389,7 +458,9 @@ public class RxHttpClient {
         }
 
         /**
-         * Return true is if connections pooling is enabled.
+         * Set whether connections pooling is enabled.
+         *
+         * <p>Default is set to true</p>
          *
          * @param allowPoolingSslConnections true if enabled
          * @return this
@@ -490,6 +561,8 @@ public class RxHttpClient {
         /**
          * Set the maximum time in millisecond connection can be added to the pool for further reuse
          *
+         * <p> Default is -1 (no TTL set)</p>
+         *
          * @param connectionTTL the maximum time in millisecond connection can be added to the pool for further reuse
          * @return a {@link RxHttpClient.Builder}
          */
@@ -543,17 +616,6 @@ public class RxHttpClient {
 //        }
 
         /**
-         * Set to false if you don't want the query parameters removed when a redirect occurs.
-         *
-         * @param removeQueryParamOnRedirect
-         * @return this
-         */
-        public RxHttpClient.Builder setRemoveQueryParamsOnRedirect(boolean removeQueryParamOnRedirect) {
-            configBuilder.setRemoveQueryParamsOnRedirect(removeQueryParamOnRedirect);
-            return this;
-        }
-
-        /**
          * Disable automatic url escaping
          *
          * @param disableUrlEncodingForBoundedRequests
@@ -601,6 +663,8 @@ public class RxHttpClient {
          * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} will keep connection
          * idle in pool.
          *
+         * <p>Default is 60000 millis (1 min.)</p>
+         *
          * @param pooledConnectionIdleTimeout@return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setPooledConnectionIdleTimeout(int pooledConnectionIdleTimeout) {
@@ -632,5 +696,45 @@ public class RxHttpClient {
         }
     }
 
+    static private class BuildValidation {
+        List<String> errors = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+
+        void addError(String errMsg) {
+            errors.add(errMsg);
+        }
+
+        void addWarning(String warningMsg) {
+            warnings.add(warningMsg);
+        }
+
+        String getErrorMessage() {
+            StringBuilder builder = new StringBuilder();
+            for (String msg : errors) {
+                builder.append(msg).append("\n");
+            }
+            return chop(builder.toString());
+        }
+
+        boolean hasWarnings() {
+            return !warnings.isEmpty();
+        }
+
+        boolean hasErrors() {
+            return !errors.isEmpty();
+        }
+
+        void logWarnings(Logger logger) {
+            for (String msg: warnings){
+                logger.warn(msg);
+            }
+        }
+
+        private String chop(String s) {
+            if (s == null || s.isEmpty()) return s;
+            return s.substring(0, s.length() - 1);
+        }
+
+    }
 
 }

@@ -3,9 +3,9 @@ import sbt._
 
 object Dependencies {
 
-  val asyncClient = "com.ning" % "async-http-client" % "1.9.0"
-  val rxjava = "io.reactivex" % "rxjava" % "1.0.2"
-  val rxscala = "io.reactivex" %% "rxscala" % "0.23.0"
+  val asyncClient = "com.ning" % "async-http-client" % "1.9.36"
+  val rxjava = "io.reactivex" % "rxjava" % "1.0.16"
+  val rxscala = "io.reactivex" %% "rxscala" % "0.25.0"
   val slf4j = "org.slf4j" % "slf4j-api" % "1.7.6"
 
   val junit = "junit" % "junit" % "4.11" % "test"
@@ -25,17 +25,16 @@ object Dependencies {
   val javaDependencies = commonDependencies ++ Seq()
 
   val scalaDependencies = commonDependencies ++ Seq(
-    rxscala
+    rxscala,
+    specs2
   )
 
   val mainTestDependencies = Seq(
     junit,
-    specs2,
     slf4jSimple,
     wiremock,
     junitInterface,
     jsonPath
   )
-
 
 }
