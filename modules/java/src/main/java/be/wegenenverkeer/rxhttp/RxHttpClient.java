@@ -277,8 +277,14 @@ public class RxHttpClient {
             }
 
             if (!config.isAllowPoolingConnections()) {
-                bv.addWarning("RxHttpClient for " + rcConfig.baseUrl + " has connection pooling disabled");
+                bv.addWarning("RxHttpClient for " + rcConfig.baseUrl + " has connection pooling disabled!");
             }
+
+            if (config.getMaxConnections() < 0 ) {
+                bv.addWarning("RxHttpClient for " + rcConfig.baseUrl + " has no maximum connections set!");
+            }
+
+
             return bv;
         }
 
