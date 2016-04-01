@@ -11,16 +11,16 @@ Observables are returned, and a number of best practices in RESTful integration 
 
 ## The RxHttpClient
 
-The intent is that for your application uses one `RxHttpClient` instance for each integration point (usually a REST service). Because creating
- an `RxHttpClient` is expensive, you should normally do this only once per integration point in your application. 
+The intent is that your application uses one `RxHttpClient` instance for each integration point (usually a REST service). Because creating
+ an `RxHttpClient` is expensive, you should do this only once in your application. 
    
-As `RxHttpClient`s are limited to one service/entry point, we have natural bulkheads between integration points: errors and failures with 
+As `RxHttpClients` are limited to one service, we have natural bulkheads between integration points: errors and failures with 
 respect to one integration point will have no direct effect on other integration points (at least if following the recommendations below).  
 
 
 ## Creating an RxHttpClient
 
-`RxHttpClient`s are created using the `RxHttpClient.Builder`s as in this example for Java:
+An `RxHttpClient` is created using the `RxHttpClient.Builder` as in this example for Java:
 
 
     RxHttpClient client = new RxHttpClient.Builder()
@@ -49,7 +49,7 @@ and for Scala:
 
 ## Creating Requests
 
-REST Requests can be created using `ClientRequestBuilder`s which in turn can be got from `RxHttpCleint` instances, like so:
+REST Requests can be created using `ClientRequestBuilders` which in turn can be got from `RxHttpClient` instances, like so:
  
     ClientRequest request = client.requestBuilder()
                     .setMethod("GET")
@@ -57,22 +57,22 @@ REST Requests can be created using `ClientRequestBuilder`s which in turn can be 
                     .addQueryParam("q", "test")
                     .build();
 
-`ClientRequest`s are immutable.
+`ClientRequest`s are immutable so can be freely shared across threads or (Akka) Actors.
 
 ## Executing Requests
 
-`RxHttpClient` has several methods for executing `ClientRequest`s:
+`RxHttpClient` has several methods for executing `ClientRequests`:
  
- + `executeToCompletion(ClientRequest, Function<ServerResponse, F>)` returns an `Observable<F>`. The second parameter is a function that transforms the 
- `ServerResponse` into a decoded value of type `F`. The returned `Observable` emits exactly one F before completing. In case of an error, it 
+ + `executeToCompletion(ClientRequest, Function<ServerResponse, F>)` returns an `Observable<F>`. The second parameter is a function that decodes the 
+ `ServerResponse` to a value of type `F`. The returned `Observable` emits exactly one `F` before completing. In case of an error, it 
     emits either an `HttpClientError` or `HttpServerError`. 
- + `execute(ClientRequest,  Function<ServerResponse, F>)` returns a `CompletableFuture<F> with the response after being decoded by the function in the argument
+ + `execute(ClientRequest,  Function<ServerResponse, F>)` returns a `CompletableFuture<F>` with the response after being decoded by the function in the argument
  + `executeOservably(ClientRequest, Function<byte[], F>)` returns an `Observable<F>` which returns an `F` for each HTTP response part or chunk received. This
-  is especially useful for processing HTTP responses using chunked transfer encoding. Each chunk will be transformed to a value of `F` and directly emitted by the  
-  Observable.
+  is especially useful for processing HTTP responses that use chunked transfer encoding. Each chunk will be transformed to a value of `F` and 
+  directly emitted by the Observable.
 
-All Observables returned by these methods are "Cold" Observables. This means that the `ClientReqeust` is executed only when some Observer subscribes 
-to the Observable. In fact, whenever an Observer subscribes to the Observable, the request is executed and that observer will receive the server response.
+All Observables returned by these methods are "Cold" Observables. This means that the `ClientRequest` is executed only when some Observer subscribes 
+to the Observable. In fact, whenever an Observer subscribes to the Observable, the request is executed.
 
 
 ## Recommended usage 
