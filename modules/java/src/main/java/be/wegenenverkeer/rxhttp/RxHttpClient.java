@@ -276,14 +276,19 @@ public class RxHttpClient {
                 bv.addError( "Malformed URL: " + e.getMessage() );
             }
 
+            String messagePrefix = "RxHttpClient for " + rcConfig.baseUrl;
+
             if (!config.isAllowPoolingConnections()) {
-                bv.addWarning("RxHttpClient for " + rcConfig.baseUrl + " has connection pooling disabled!");
+                bv.addWarning( messagePrefix + " has connection pooling disabled!");
             }
 
             if (config.getMaxConnections() < 0 ) {
-                bv.addWarning("RxHttpClient for " + rcConfig.baseUrl + " has no maximum connections set!");
+                bv.addWarning(messagePrefix + " has no maximum connections set!");
             }
 
+            if (config.getConnectionTTL() < 0 && config.getPooledConnectionIdleTimeout() < 0) {
+                bv.addWarning(messagePrefix + " has no connection TTL or pool idle timeout set!");
+            }
 
             return bv;
         }
