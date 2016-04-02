@@ -67,7 +67,7 @@ public class ClientRequestBuilder {
      * @return this {@code ClientRequestBuilder}
      */
     public ClientRequestBuilder addFileBodyPart(String name, File file, String contentType, Charset charset, String fileName, String contentId, String transferEncoding) {
-        inner.addBodyPart( new FilePart(name, file, contentType, charset, contentId, fileName, transferEncoding) );
+        inner.addBodyPart( new FilePart(name, file, contentType, charset, fileName, contentId, transferEncoding) );
         return this;
     }
 
