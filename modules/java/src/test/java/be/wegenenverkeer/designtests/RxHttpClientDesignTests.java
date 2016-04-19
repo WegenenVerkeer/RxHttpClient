@@ -57,6 +57,89 @@ public class RxHttpClientDesignTests extends UsingWireMock{
 
     }
 
+    /**
+     * Proves that UTF-8 charset is used as default.
+     * @throws InterruptedException
+     */
+    @Test
+    public void testCharsetEncodingDefaultsToUTF8() throws InterruptedException {
+
+        //set up stub
+        String expectBody = "{ 'contacts': 'žẽūș' }"; // with chars only available in UTF-8
+
+        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+                .withQueryParam("q", equalTo("test"))
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(aResponse().withFixedDelay(200)
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(expectBody)));
+
+        //set up use case
+        String path = "/contacts";
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase(path)
+                .addQueryParam("q", "test")
+                .build();
+
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+
+
+        TestSubscriber<String> sub = new TestSubscriber<>();
+        observable.subscribe(sub);
+
+        sub.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.assertNoErrors();
+
+        sub.assertReceivedOnNext(items(expectBody));
+    }
+
+    /**
+     * Proves that charset when present in content type gets priority over default UTF-8
+     * @throws InterruptedException
+     */
+    @Test
+    public void testCharsetEncodingInContentType() throws InterruptedException {
+
+        //set up stub
+        String expectBody = "{ 'contacts': 'žẽūș' }"; // with chars only available in UTF-8
+
+        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+                .withQueryParam("q", equalTo("test"))
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(aResponse().withFixedDelay(200)
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json;charset=ISO-8859-1") // explicitly picking Latin-1
+                        .withBody(expectBody)));
+
+        //set up use case
+        String path = "/contacts";
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase(path)
+                .addQueryParam("q", "test")
+                .build();
+
+        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+
+
+        TestSubscriber<String> sub = new TestSubscriber<>();
+        observable.subscribe(sub);
+
+        sub.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.assertNoErrors();
+
+        try {
+            sub.assertReceivedOnNext(items(expectBody));
+            fail("Expecting wrongly parsed body");
+        } catch (AssertionError exp) {
+             // failure expected
+        }
+
+
+    }
+
     @Test
     public void GETHappyPathWithFuture() throws InterruptedException, TimeoutException, ExecutionException {
         //set up stub
