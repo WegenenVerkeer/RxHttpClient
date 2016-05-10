@@ -3,10 +3,11 @@ package be.wegenenverkeer.rxhttp;
 import com.ning.http.client.Response;
 import com.ning.http.client.cookie.Cookie;
 import com.ning.http.client.uri.Uri;
-
+import com.ning.http.util.AsyncHttpProviderUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,11 +15,11 @@ import java.util.function.Function;
 
 /**
  * Wraps an Async Response delegate.
- *
+ * <p>
  * <p>This wrapper makes it easier to work with lambda expressions because the
  * checked IOExceptions are wrapped in RuntimeExceptions.
  * </p>
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
 public class ServerResponse implements ServerResponseStatus, ServerResponseHeaders, ServerResponseBodyPart {
@@ -50,12 +51,18 @@ public class ServerResponse implements ServerResponseStatus, ServerResponseHeade
         }
     }
 
-    public String getResponseBody()  {
-        try {
-            return response.getResponseBody();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public String getResponseBody() {
+
+        Optional<String> parsedCharset =
+                Optional
+                .ofNullable(response.getContentType()) // content-type can be null
+                .flatMap( contentType ->
+                        // parseCharset can also return null
+                        Optional.ofNullable(AsyncHttpProviderUtils.parseCharset(contentType))
+                );
+
+        String charset = parsedCharset.orElseGet(StandardCharsets.UTF_8::name);
+        return getResponseBody(charset);
     }
 
     public byte[] getResponseBodyAsBytes() {
