@@ -4,6 +4,8 @@ import com.ning.http.client.*;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +32,23 @@ public class ClientRequest {
 
     public Map<String, List<String>> getHeaders() {
         return request.getHeaders();
+    }
+
+    public Map<String, List<String>> getQueryParams(){
+        List<Param> queryParams = request.getQueryParams();
+        Map<String, List<String>> result = new HashMap<>();
+        for (Param p : queryParams) {
+            String name = p.getName();
+            String val = p.getValue();
+            if(result.get(name) == null) {
+                List<String> vals = new ArrayList<>();
+                vals.add(val);
+                result.put(name, vals);
+            } else {
+                result.get(name).add(val);
+            }
+        }
+        return result;
     }
 
 
@@ -124,6 +143,13 @@ public class ClientRequest {
 
     public String toString() {
         return this.request.toString();
+    }
+
+    //provided to inject AWS headers after request is built
+    void addHeader(String header, String value) {
+        List<String> hv = new ArrayList<>();
+        hv.add(value);
+        this.getHeaders().put(header, hv);
     }
 
 }
