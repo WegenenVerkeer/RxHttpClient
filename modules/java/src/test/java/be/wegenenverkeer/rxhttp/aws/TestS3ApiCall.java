@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TestS3ApiCall {
 
-//    @Ignore("Only run when we have correct environment set up")
+    @Ignore("Only run when we have correct environment set up")
     @Test
     public void testS3ApiCall(){
 
