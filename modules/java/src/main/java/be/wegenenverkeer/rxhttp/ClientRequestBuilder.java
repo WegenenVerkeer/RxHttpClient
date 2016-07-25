@@ -1,13 +1,16 @@
 package be.wegenenverkeer.rxhttp;
 
+import be.wegenenverkeer.rxhttp.aws.AwsSignature4Signer;
 import com.ning.http.client.*;
-import com.ning.http.client.cookie.Cookie;
 import com.ning.http.client.multipart.ByteArrayPart;
 import com.ning.http.client.multipart.FilePart;
 import com.ning.http.client.multipart.StringPart;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +24,7 @@ public class ClientRequestBuilder {
 
     final private RequestBuilder inner;
     final private RxHttpClient client;
+    final private DateTimeFormatter df;
 
     //mutable state to check conformity to policy
     private boolean hasAcceptHeader;
@@ -28,16 +32,29 @@ public class ClientRequestBuilder {
     ClientRequestBuilder(RxHttpClient client) {
         inner = new RequestBuilder();
         this.client = client;
+        df = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX");
     }
 
     public ClientRequest build() {
-        sanitizeConfiguration();
-        return new ClientRequest(inner.build());
+        sanitize();
+        ClientRequest request = new ClientRequest(inner.build());
+        addOptionalAwsHeaders(request);
+        return request;
     }
 
-    private void sanitizeConfiguration(){
-        if(!hasAcceptHeader) {
+    private void sanitize(){
+        if(!hasAcceptHeader && client.getAccept() != null ) {
             addHeader("Accept", client.getAccept());
+        }
+    }
+
+    private void addOptionalAwsHeaders(ClientRequest request) {
+        if (this.client.hasAwsRequestSigner()) {
+            AwsSignature4Signer signer = this.client.getAwsRequestSigner().get();
+            String timeStamp = df.format( ZonedDateTime.now(ZoneOffset.UTC) );
+            request.addHeader("x-amz-date", timeStamp);
+            request.addHeader("host", signer.awsHost());
+            request.addHeader("Authorization", signer.authHeader(request, timeStamp));
         }
     }
 
