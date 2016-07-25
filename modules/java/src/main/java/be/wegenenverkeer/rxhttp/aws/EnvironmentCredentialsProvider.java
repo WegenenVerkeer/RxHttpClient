@@ -21,8 +21,10 @@ public class EnvironmentCredentialsProvider implements AwsCredentialsProvider {
     }
 
     /**
-     * Constructs an instance using the specified {@code Environment}
-     * @param env
+     * Constructs an instance using the specified {@code Environment}.
+     *
+     * This method is used for unit testing
+     * @param env the {@code Environment} to provide
      */
     public EnvironmentCredentialsProvider(Environment env) {
         this.env = env;

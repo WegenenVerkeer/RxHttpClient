@@ -1,7 +1,7 @@
 package be.wegenenverkeer.rxhttp.aws;
 
 /**
- * An {@AwsCredentialProvider} that always returns the credentials provided during instance construction
+ * An {@code AwsCredentialsProvider} that always returns the credentials provided during instance construction
  *
  * Created by Karel Maesen, Geovise BVBA on 06/06/16.
  */

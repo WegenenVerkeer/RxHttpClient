@@ -12,19 +12,19 @@ public interface Environment {
     /**
      * The default implementation (equivalent to <code>System.getenv()</code>
      */
-    static Environment DEFAULT = new DefaultEnvironment();
+    Environment DEFAULT = new DefaultEnvironment();
 
     /**
      * Returns the environment variables as a <code>Map</code>
      * @return the environment variables as a <code>Map</code>
      */
-    public Map<String, String> getEnvironment();
+    Map<String, String> getEnvironment();
 
     /**
      * Returns the environment variable specified by the key argument
      * @param key the environment variable name
      * @return the value for the specified environment variable
      */
-    public String getEnvironment(String key);
+    String getEnvironment(String key);
 
 }
