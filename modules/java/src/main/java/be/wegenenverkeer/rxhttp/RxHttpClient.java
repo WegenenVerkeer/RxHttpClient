@@ -35,13 +35,13 @@ public class RxHttpClient {
 
     final private AsyncHttpClient innerClient;
     final private RestClientConfig config;
-    final private Optional<AwsSignature4Signer> awsSigner;
+    final private AwsSignature4Signer awsSigner;
 
 
     protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config, AwsSignature4Signer signer) {
         this.innerClient = innerClient;
         this.config = config;
-        this.awsSigner = Optional.ofNullable(signer);
+        this.awsSigner = signer;
     }
 
     protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config) {
@@ -171,11 +171,11 @@ public class RxHttpClient {
     }
 
     public boolean hasAwsRequestSigner(){
-        return this.awsSigner.isPresent();
+        return this.awsSigner != null;
     }
 
     public Optional<AwsSignature4Signer> getAwsRequestSigner(){
-        return this.awsSigner;
+        return Optional.ofNullable(this.awsSigner);
     }
 
     /**
@@ -199,6 +199,34 @@ public class RxHttpClient {
 
         private String baseUrl = "";
         private String Accept = "application/json";
+
+        private boolean throttling = false;
+        private int throttlingMaxWait = 0;
+        private int maxConnections = -1;
+
+        public void enableThrottling() {
+            this.throttling = true;
+        }
+
+        public void setThrottlingMaxWait(int throttlingMaxWait) {
+            this.throttlingMaxWait = throttlingMaxWait;
+        }
+
+        public void setMaxConnections(int maxConn) {
+            this.maxConnections = maxConn;
+        }
+
+        public boolean isThrottling() {
+            return throttling;
+        }
+
+        public int getThrottlingMaxWait() {
+            return throttlingMaxWait;
+        }
+
+        public int getMaxConnections() {
+            return maxConnections;
+        }
 
         void setBaseUrl(String baseUrl) {
             this.baseUrl = chopLastForwardSlash(baseUrl);
@@ -233,13 +261,16 @@ public class RxHttpClient {
 
         private AsyncHttpClientConfig.Builder configBuilder = new AsyncHttpClientConfig.Builder();
         final private RestClientConfig rcConfig = new RestClientConfig();
+
         private boolean isAws = false;
         private AwsRegion awsRegion;
         private AwsService awsService;
         private AwsCredentialsProvider awsCredentialsProvider;
 
         public RxHttpClient build() {
+            addRestClientConfigsToConfigBuilder();
             AsyncHttpClientConfig config = configBuilder.build();
+
             BuildValidation validation = validate(config);
 
             validation.logWarnings(logger);
@@ -260,12 +291,29 @@ public class RxHttpClient {
             }
         }
 
+        /**
+         * Perform additional configBuilder build steps based on rcConfig settings
+         */
+        private void addRestClientConfigsToConfigBuilder() {
+            if(rcConfig.getMaxConnections() > 0) {
+                configBuilder.setMaxConnections(rcConfig.getMaxConnections());
+            }
+            if (rcConfig.getMaxConnections() > 0 && rcConfig.isThrottling() && rcConfig.getThrottlingMaxWait() > 0) {
+                addThrottling(rcConfig.getMaxConnections(), rcConfig.getThrottlingMaxWait());
+            }
+        }
+
+
+        private void addThrottling(int maxConnections, int maxWait) {
+            RequestFilter filter = new ThrottleRequestFilter(maxConnections, maxWait);
+            configBuilder.addRequestFilter(filter);
+        }
 
         /**
          * Sets the default Accept request-header for requests built using this instance.
          *
          * @param acceptHeaderValue the Media-range and accept-params to use as value for the Accept request-header field
-         * @return
+         * @return this Builder
          * @see <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html">W3C HTTP 1.1 specs</a>.
          */
         public RxHttpClient.Builder setAccept(String acceptHeaderValue) {
@@ -279,7 +327,7 @@ public class RxHttpClient {
          * <p>The base url will be prepended to any relative URL path specified in the {@code RequestBuilder}</p>
          *
          * @param url the base URL for this instance
-         * @return
+         * @return this.Builder
          */
         public RxHttpClient.Builder setBaseUrl(String url) {
             rcConfig.setBaseUrl(url);
@@ -311,6 +359,14 @@ public class RxHttpClient {
                 bv.addWarning(messagePrefix + " has connection pooling disabled!");
             }
 
+            if (config.getMaxConnections() < 0 && rcConfig.isThrottling()) {
+                bv.addError("Configured throttling, but no max. Connections set");
+            }
+
+            if (rcConfig.isThrottling() && rcConfig.getThrottlingMaxWait() <= 0) {
+                bv.addError("Configured throttling, but timeout is set to " + rcConfig.getThrottlingMaxWait());
+            }
+
             if (config.getMaxConnections() < 0) {
                 bv.addWarning(messagePrefix + " has no maximum connections set!");
             }
@@ -330,7 +386,9 @@ public class RxHttpClient {
          * @return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setMaxConnections(int maxConnections) {
-            configBuilder.setMaxConnections(maxConnections);
+            //we set this setting first on the rcConfig object, because we need this information together with the other throttling settings
+            // to properly configure the RequestThrottler
+            rcConfig.setMaxConnections(maxConnections);
             return this;
         }
 
@@ -345,6 +403,18 @@ public class RxHttpClient {
             return this;
         }
 
+        /**
+         * Throttles requests by blocking until connections in the pool become available, waiting for
+         * the response to arrives before executing the next request.
+         *
+         * @param maxWait timeout in millisceconds
+         * @return this Builder
+         */
+        public RxHttpClient.Builder setThrottling(int maxWait) {
+            rcConfig.enableThrottling();
+            rcConfig.setThrottlingMaxWait(maxWait);
+            return this;
+        }
         /**
          * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can wait when connecting to a remote host
          *
@@ -522,7 +592,7 @@ public class RxHttpClient {
          * <p>
          * See http://download.oracle.com/javase/1.4.2/docs/guide/net/properties.html
          *
-         * @param useProxyProperties
+         * @param useProxyProperties whether AHC should use the default http.proxy* system properties
          */
         public RxHttpClient.Builder setUseProxyProperties(boolean useProxyProperties) {
             configBuilder.setUseProxyProperties(useProxyProperties);
@@ -534,7 +604,7 @@ public class RxHttpClient {
          * <p>
          * See http://docs.oracle.com/javase/7/docs/api/java/net/ProxySelector.html
          *
-         * @param useProxySelector
+         * @param useProxySelector whether AHC should use the default JDK ProxySelector to select a proxy server.
          */
         public RxHttpClient.Builder setUseProxySelector(boolean useProxySelector) {
             configBuilder.setUseProxySelector(useProxySelector);
@@ -622,18 +692,6 @@ public class RxHttpClient {
         }
 
 
-        /**
-         * Throttles requests and block when the number of permits is reached, waiting for
-         * the response to arrives before executing the next request.
-         * @param maxConnection max number of permits available
-         * @param maxWait timeout in millisceconds
-         * @return this Builder
-         */
-        public RxHttpClient.Builder setThrottling(int maxConnection, int maxWait) {
-            RequestFilter filter = new ThrottleRequestFilter(maxConnection, maxWait);
-            configBuilder.addRequestFilter(filter);
-            return this;
-        }
 
 //        /**
 //         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeObservably(com.ning.http.client.Request)}
@@ -661,8 +719,8 @@ public class RxHttpClient {
         /**
          * Disable automatic url escaping
          *
-         * @param disableUrlEncodingForBoundedRequests
-         * @return this
+         * @param disableUrlEncodingForBoundedRequests disables the url encoding if set to true
+         * @return this Builder
          */
         public RxHttpClient.Builder setDisableUrlEncodingForBoundedRequests(boolean disableUrlEncodingForBoundedRequests) {
             configBuilder.setDisableUrlEncodingForBoundedRequests(disableUrlEncodingForBoundedRequests);
