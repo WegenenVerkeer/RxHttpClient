@@ -2,6 +2,8 @@ package be.wegenenverkeer.rxhttp;
 
 import be.wegenenverkeer.rxhttp.aws.*;
 import com.ning.http.client.*;
+import com.ning.http.client.extra.ThrottleRequestFilter;
+import com.ning.http.client.filter.RequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -616,6 +618,20 @@ public class RxHttpClient {
          */
         public RxHttpClient.Builder setFollowRedirect(boolean followRedirect) {
             configBuilder.setFollowRedirect(followRedirect);
+            return this;
+        }
+
+
+        /**
+         * Throttles requests and block when the number of permits is reached, waiting for
+         * the response to arrives before executing the next request.
+         * @param maxConnection max number of permits available
+         * @param maxWait timeout in millisceconds
+         * @return this Builder
+         */
+        public RxHttpClient.Builder setThrottling(int maxConnection, int maxWait) {
+            RequestFilter filter = new ThrottleRequestFilter(maxConnection, maxWait);
+            configBuilder.addRequestFilter(filter);
             return this;
         }
 
