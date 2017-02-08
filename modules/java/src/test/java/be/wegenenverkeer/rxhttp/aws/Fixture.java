@@ -29,7 +29,7 @@ class Fixture {
     }
 
     static AwsSignature4Signer signer() {
-        return new AwsSignature4Signer(AwsRegion.US_EAST, AwsService.HOST, provider.getAwsCredentials());
+        return new AwsSignature4Signer(AwsRegion.US_EAST, AwsService.HOST, provider);
     }
 
     public static Aws4TestSuite testSuite(){
