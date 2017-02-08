@@ -284,7 +284,7 @@ public class RxHttpClient {
 
             if (isAws) {
                 AwsSignature4Signer signer = new AwsSignature4Signer(this.awsRegion,
-                        this.awsService, this.awsCredentialsProvider.getAwsCredentials());
+                        this.awsService, this.awsCredentialsProvider);
                 return new RxHttpClient(new AsyncHttpClient(config), rcConfig, signer);
             } else {
                 return new RxHttpClient(new AsyncHttpClient(config), rcConfig);

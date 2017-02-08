@@ -24,16 +24,16 @@ public class AwsSignature4Signer {
 
     private final AwsRegion region;
     private final AwsService service;
-    private final AwsCredentials credentials;
+    private final AwsCredentialsProvider credentialsProvider;
 
 
     private final DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
 
 
-    public AwsSignature4Signer(AwsRegion region, AwsService service, AwsCredentials credentials) {
+    public AwsSignature4Signer(AwsRegion region, AwsService service, AwsCredentialsProvider credentialsProvider) {
         this.region = region;
         this.service = service;
-        this.credentials = credentials;
+        this.credentialsProvider = credentialsProvider;
     }
 
     public String canonicalRequest(ClientRequest request) {
@@ -60,10 +60,11 @@ public class AwsSignature4Signer {
     }
 
     public String authHeader(ClientRequest request, String timestamp) {
+        AwsCredentials credentials = this.credentialsProvider.getAwsCredentials();
         String creq = canonicalRequest(request);
         String sts = stringToSign(creq, timestamp);
-        String signature = signature(sts, timestamp);
-        return formatAuthHeader(signature, timestamp, signedHeaders(request.getHeaders()));
+        String signature = signature(sts, timestamp, credentials);
+        return formatAuthHeader(signature, timestamp, signedHeaders(request.getHeaders()), credentials);
     }
 
     public String awsHost() {
@@ -154,7 +155,7 @@ public class AwsSignature4Signer {
         return buf.toString();
     }
 
-    public String signature(String stringToSign, String timestamp) {
+    public String signature(String stringToSign, String timestamp, AwsCredentials credentials) {
         try {
             byte[] signatureKey = getSignatureKey(
                     credentials.getAWSSecretKey(),
@@ -168,7 +169,7 @@ public class AwsSignature4Signer {
         }
     }
 
-    public String formatAuthHeader(String signature, String timestamp, String SignedHeaders) {
+    public String formatAuthHeader(String signature, String timestamp, String SignedHeaders, AwsCredentials credentials) {
         StringBuilder builder = new StringBuilder("AWS4-HMAC-SHA256 ")
                 .append("Credential=")
                 .append(credentials.getAWSAccessKeyId())
@@ -249,4 +250,7 @@ public class AwsSignature4Signer {
         return str.trim().replaceAll(" +", " ");
     }
 
+    public Optional<String> getSecurityToken() {
+        return credentialsProvider.getAwsCredentials().getToken();
+    }
 }

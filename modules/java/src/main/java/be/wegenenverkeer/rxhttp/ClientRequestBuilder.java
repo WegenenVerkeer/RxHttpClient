@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * A Builder for Client Requests.
@@ -55,6 +56,10 @@ public class ClientRequestBuilder {
             request.addHeader("x-amz-date", timeStamp);
             request.addHeader("host", signer.awsHost());
             request.addHeader("Authorization", signer.authHeader(request, timeStamp));
+            Optional<String> securityToken = signer.getSecurityToken();
+            if( securityToken.isPresent()) {
+                request.addHeader("X-Amz-Security-Token", securityToken.get());
+            }
         }
     }
 
