@@ -1,5 +1,6 @@
 package be.wegenenverkeer.rxhttp;
 
+import be.wegenenverkeer.rxhttp.aws.AwsCredentials;
 import be.wegenenverkeer.rxhttp.aws.AwsSignature4Signer;
 import com.ning.http.client.*;
 import com.ning.http.client.multipart.ByteArrayPart;
@@ -52,14 +53,15 @@ public class ClientRequestBuilder {
     private void addOptionalAwsHeaders(ClientRequest request) {
         if (this.client.hasAwsRequestSigner()) {
             AwsSignature4Signer signer = this.client.getAwsRequestSigner().get();
+            AwsCredentials credentials = signer.getCredentials();
             String timeStamp = df.format( ZonedDateTime.now(ZoneOffset.UTC) );
             request.addHeader("x-amz-date", timeStamp);
             request.addHeader("host", signer.awsHost());
-            request.addHeader("Authorization", signer.authHeader(request, timeStamp));
-            Optional<String> securityToken = signer.getSecurityToken();
+            Optional<String> securityToken = credentials.getToken();
             if( securityToken.isPresent()) {
-                request.addHeader("X-Amz-Security-Token", securityToken.get());
+                request.addHeader("x-amz-security-token", securityToken.get());
             }
+            request.addHeader("Authorization", signer.authHeader(request, timeStamp, credentials));
         }
     }
 

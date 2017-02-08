@@ -59,18 +59,26 @@ public class AwsSignature4Signer {
                 + digest( body == null ? "" : body );
     }
 
-    public String authHeader(ClientRequest request, String timestamp) {
-        AwsCredentials credentials = this.credentialsProvider.getAwsCredentials();
-        String creq = canonicalRequest(request);
-        String sts = stringToSign(creq, timestamp);
-        String signature = signature(sts, timestamp, credentials);
-        return formatAuthHeader(signature, timestamp, signedHeaders(request.getHeaders()), credentials);
+    public AwsCredentials getCredentials() {
+        return this.credentialsProvider.getAwsCredentials();
     }
+
 
     public String awsHost() {
         return AwsServiceEndPoint.hostFor(service, region);
     }
 
+
+    public String authHeader(ClientRequest request, String timestamp) {
+        return authHeader(request, timestamp, this.getCredentials());
+    }
+
+    public String authHeader(ClientRequest request, String timestamp, AwsCredentials credentials) {
+        String creq = canonicalRequest(request);
+        String sts = stringToSign(creq, timestamp);
+        String signature = signature(sts, timestamp, credentials);
+        return formatAuthHeader(signature, timestamp, signedHeaders(request.getHeaders()), credentials);
+    }
 
     private String canonicalUri(String uri) {
         if (uri.isEmpty()) return "/";
@@ -250,7 +258,4 @@ public class AwsSignature4Signer {
         return str.trim().replaceAll(" +", " ");
     }
 
-    public Optional<String> getSecurityToken() {
-        return credentialsProvider.getAwsCredentials().getToken();
-    }
 }
