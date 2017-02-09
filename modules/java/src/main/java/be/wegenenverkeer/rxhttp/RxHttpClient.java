@@ -259,12 +259,13 @@ public class RxHttpClient {
      */
     static public class Builder {
 
+        final private static Logger logger = LoggerFactory.getLogger(RxHttpClient.class);
+
         private AsyncHttpClientConfig.Builder configBuilder = new AsyncHttpClientConfig.Builder();
         final private RestClientConfig rcConfig = new RestClientConfig();
 
         private boolean isAws = false;
-        private AwsRegion awsRegion;
-        private AwsService awsService;
+        private AwsServiceEndPoint awsServiceEndPoint;
         private AwsCredentialsProvider awsCredentialsProvider;
 
         public RxHttpClient build() {
@@ -283,8 +284,7 @@ public class RxHttpClient {
             }
 
             if (isAws) {
-                AwsSignature4Signer signer = new AwsSignature4Signer(this.awsRegion,
-                        this.awsService, this.awsCredentialsProvider);
+                AwsSignature4Signer signer = new AwsSignature4Signer(this.awsServiceEndPoint, this.awsCredentialsProvider);
                 return new RxHttpClient(new AsyncHttpClient(config), rcConfig, signer);
             } else {
                 return new RxHttpClient(new AsyncHttpClient(config), rcConfig);
@@ -330,6 +330,7 @@ public class RxHttpClient {
          * @return this.Builder
          */
         public RxHttpClient.Builder setBaseUrl(String url) {
+            if (this.isAws) throw new IllegalStateException("Not allowed to set Base URL on AWS EndPoint");
             rcConfig.setBaseUrl(url);
             return this;
         }
@@ -797,13 +798,16 @@ public class RxHttpClient {
         }
 
         public Builder setAwsEndPoint(AwsService service, AwsRegion region) {
+            return setAwsEndPoint(service, region, AwsServiceEndPoint.defaultHostFor(service, region));
+        }
+
+        public Builder setAwsEndPoint(AwsService service, AwsRegion region, String domain) {
             if (service == null || region == null) {
                 throw new IllegalArgumentException("No null arguments allowed");
             }
-            String url = AwsServiceEndPoint.UrlFor(service, region);
-            this.setBaseUrl(url);
-            this.awsRegion = region;
-            this.awsService = service;
+            this.awsServiceEndPoint = new AwsServiceEndPoint(service, region, domain);
+            logger.info("Overwriting Base URL to " + this.awsServiceEndPoint.endPointUrl());
+            this.setBaseUrl(this.awsServiceEndPoint.endPointUrl());
             this.isAws = true;
             return this;
         }

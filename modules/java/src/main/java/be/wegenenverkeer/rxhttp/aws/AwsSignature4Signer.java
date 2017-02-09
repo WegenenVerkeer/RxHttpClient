@@ -22,17 +22,15 @@ import java.util.stream.Collectors;
  */
 public class AwsSignature4Signer {
 
-    private final AwsRegion region;
-    private final AwsService service;
+    private final AwsServiceEndPoint endPoint;
     private final AwsCredentialsProvider credentialsProvider;
 
 
     private final DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
 
 
-    public AwsSignature4Signer(AwsRegion region, AwsService service, AwsCredentialsProvider credentialsProvider) {
-        this.region = region;
-        this.service = service;
+    public AwsSignature4Signer(AwsServiceEndPoint serviceEndPoint, AwsCredentialsProvider credentialsProvider) {
+        this.endPoint = serviceEndPoint;
         this.credentialsProvider = credentialsProvider;
     }
 
@@ -65,7 +63,7 @@ public class AwsSignature4Signer {
 
 
     public String awsHost() {
-        return AwsServiceEndPoint.hostFor(service, region);
+        return endPoint.getDomain();
     }
 
 
@@ -168,8 +166,8 @@ public class AwsSignature4Signer {
             byte[] signatureKey = getSignatureKey(
                     credentials.getAWSSecretKey(),
                     timestamp.substring(0, 8),
-                    region.toString(),
-                    service.prefix()
+                    endPoint.getRegion().toString(),
+                    endPoint.getService().prefix()
             );
             return hexEncode(hmacSHA256(stringToSign, signatureKey));
         } catch (Exception e) {
@@ -197,9 +195,9 @@ public class AwsSignature4Signer {
     private StringBuilder appendCredentialScope(StringBuilder builder, String timestamp) {
         builder.append(timestamp.substring(0, 8))
                 .append("/")
-                .append(region)
+                .append(endPoint.getRegion())
                 .append("/")
-                .append(service)
+                .append(endPoint.getService())
                 .append("/")
                 .append("aws4_request");
         return builder;
