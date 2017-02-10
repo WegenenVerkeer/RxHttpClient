@@ -6,16 +6,13 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Amazon's Request v4 Signing Test suite
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 06/06/16.
  */
 public class Aws4TestSuite implements Iterable<Aws4TestCase> {
@@ -32,14 +29,45 @@ public class Aws4TestSuite implements Iterable<Aws4TestCase> {
                 .setBaseUrl("http://localhost/")
                 .setAccept(null) //force that we don't set an accept-header!!
                 .build();
+
         this.sourceDirectory = sourceDir;
-        cases = loadTestCases();
+        if(sourceDirectory != null) {
+            cases = loadTestCases();
+        } else {
+            cases = new ArrayList<>();
+        }
+    }
+
+    Aws4TestSuite() {
+        this(null);
     }
 
     private List<Aws4TestCase> loadTestCases() {
         return Stream.of(
                 sourceDirectory.list((File dir, String name) -> name.endsWith(".req"))
         ).map(this::parseRequest).collect(Collectors.toList());
+    }
+
+    void clear() {
+        this.cases.clear();
+    }
+
+    void addTestCase(String method, String uri, String body, Map<String, String> headers, Map<String,String> queryParams) {
+        Aws4TestCase tc = new Aws4TestCase(client);
+        tc.setMethod(method);
+        tc.setUri(uri);
+        tc.setBody(body);
+        if (headers != null) {
+            for (Map.Entry<String, String> kv : headers.entrySet()) {
+                tc.addHeader(kv.getKey(), kv.getValue());
+            }
+        }
+        if(queryParams != null) {
+            for (Map.Entry<String, String> kv : queryParams.entrySet()) {
+                tc.addQueryParam(kv.getKey(), kv.getValue());
+            }
+        }
+        cases.add(tc);
     }
 
     /**

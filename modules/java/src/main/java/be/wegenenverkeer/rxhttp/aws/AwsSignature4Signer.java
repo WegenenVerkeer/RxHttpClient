@@ -3,6 +3,8 @@ package be.wegenenverkeer.rxhttp.aws;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import com.ning.http.util.UTF8UrlEncoder;
 import org.apache.commons.codec.binary.Hex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
  */
 public class AwsSignature4Signer {
 
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final AwsServiceEndPoint endPoint;
     private final AwsCredentialsProvider credentialsProvider;
 
@@ -73,7 +76,9 @@ public class AwsSignature4Signer {
 
     public String authHeader(ClientRequest request, String timestamp, AwsCredentials credentials) {
         String creq = canonicalRequest(request);
+        logger.debug("Canonical Request: " + creq);
         String sts = stringToSign(creq, timestamp);
+        logger.debug("String to sign: " + sts);
         String signature = signature(sts, timestamp, credentials);
         return formatAuthHeader(signature, timestamp, signedHeaders(request.getHeaders()), credentials);
     }
@@ -81,7 +86,7 @@ public class AwsSignature4Signer {
     private String canonicalUri(String uri) {
         if (uri.isEmpty()) return "/";
         try {
-            return UTF8UrlEncoder.encodePath(new URI(uri).normalize().getPath());
+            return UTF8UrlEncoder.encodePath(new URI(uri).normalize().getRawPath());
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }
