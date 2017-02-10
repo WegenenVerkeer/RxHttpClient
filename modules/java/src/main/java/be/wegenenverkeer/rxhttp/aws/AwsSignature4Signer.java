@@ -11,6 +11,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeFormatter;
@@ -30,11 +31,17 @@ public class AwsSignature4Signer {
 
 
     private final DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
+    private final boolean doubleUrlEnocde;
 
 
-    public AwsSignature4Signer(AwsServiceEndPoint serviceEndPoint, AwsCredentialsProvider credentialsProvider) {
+    public AwsSignature4Signer(AwsServiceEndPoint serviceEndPoint, AwsCredentialsProvider credentialsProvider, boolean doubleUrlEncode) {
         this.endPoint = serviceEndPoint;
         this.credentialsProvider = credentialsProvider;
+        this.doubleUrlEnocde = doubleUrlEncode;
+    }
+
+    public AwsSignature4Signer(AwsServiceEndPoint serviceEndPoint, AwsCredentialsProvider credentialsProvider){
+        this(serviceEndPoint, credentialsProvider, true);
     }
 
     public String canonicalRequest(ClientRequest request) {
@@ -86,7 +93,7 @@ public class AwsSignature4Signer {
     private String canonicalUri(String uri) {
         if (uri.isEmpty()) return "/";
         try {
-            return UTF8UrlEncoder.encodePath(new URI(uri).normalize().getRawPath());
+            return doubleUrlEnocde ? UrlEncoder.urlEncode(new URI(uri).normalize().getRawPath(), true) : new URI(uri).normalize().getRawPath();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }

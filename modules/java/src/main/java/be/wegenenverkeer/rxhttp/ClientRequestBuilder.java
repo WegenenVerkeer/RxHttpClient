@@ -6,6 +6,7 @@ import com.ning.http.client.*;
 import com.ning.http.client.multipart.ByteArrayPart;
 import com.ning.http.client.multipart.FilePart;
 import com.ning.http.client.multipart.StringPart;
+import com.ning.http.util.UTF8UrlEncoder;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -149,9 +150,18 @@ public class ClientRequestBuilder {
 //    return this;}
 
     public ClientRequestBuilder setUrlRelativetoBase(String url) {
-        inner.setUrl(toFullPath(url));
+        return setUrlRelativetoBase(url, false);
+    }
+
+    public ClientRequestBuilder setUrlRelativetoBase(String url, boolean urlEncode) {
+        if (urlEncode) {
+            inner.setUrl(UTF8UrlEncoder.encodePath(toFullPath(url)));
+        } else {
+            inner.setUrl(toFullPath(url));
+        }
         return this;
     }
+
 
     public ClientRequestBuilder setBody(List<byte[]> data) {
         inner.setBody(data);
