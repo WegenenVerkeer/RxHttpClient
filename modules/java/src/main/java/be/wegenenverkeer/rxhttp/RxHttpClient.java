@@ -1,6 +1,9 @@
 package be.wegenenverkeer.rxhttp;
 
+import be.wegenenverkeer.rxhttp.aws.*;
 import com.ning.http.client.*;
+import com.ning.http.client.extra.ThrottleRequestFilter;
+import com.ning.http.client.filter.RequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -13,6 +16,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,26 +35,30 @@ public class RxHttpClient {
 
     final private AsyncHttpClient innerClient;
     final private RestClientConfig config;
+    final private AwsSignature4Signer awsSigner;
 
 
-    protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config) {
+    protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config, AwsSignature4Signer signer) {
         this.innerClient = innerClient;
         this.config = config;
+        this.awsSigner = signer;
+    }
+
+    protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config) {
+        this(innerClient, config, null);
     }
 
 
     /**
-     ** Executes a request and returns an Observable for the complete response.
-     *
-     *
+     * * Executes a request and returns an Observable for the complete response.
      */
-    public <F> CompletableFuture<F> execute(ClientRequest request, Function<ServerResponse, F> transformer ){
+    public <F> CompletableFuture<F> execute(ClientRequest request, Function<ServerResponse, F> transformer) {
         logger.info("Sending Request: " + request.toString());
         //Note: we don't use Observable.toBlocking().toFuture()
         //because we need a CompletableFuture so that interop with Scala is possible
         final CompletableFuture<F> future = new CompletableFuture<>();
 
-        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandler<F>(){
+        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandler<F>() {
             @Override
             public F onCompleted(Response response) throws Exception {
                 try {
@@ -62,7 +70,7 @@ public class RxHttpClient {
                             future::completeExceptionally,
                             future::completeExceptionally
                     );
-                } catch(Throwable t) {
+                } catch (Throwable t) {
                     logger.error("onError handler failed: " + t.getMessage(), t);
                     future.completeExceptionally(t);
                 }
@@ -91,7 +99,7 @@ public class RxHttpClient {
      * @return An Observable that returns the transformed server response.
      */
     public <F> Observable<F> executeToCompletion(ClientRequest request, Function<ServerResponse, F> transformer) {
-        return Observable.defer( () -> {
+        return Observable.defer(() -> {
             logger.info("Sending Request: " + request.toString());
             AsyncSubject<F> subject = AsyncSubject.create();
             innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, transformer));
@@ -123,9 +131,9 @@ public class RxHttpClient {
      * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
      * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
      *
-     * @param request the request to send
+     * @param request   the request to send
      * @param transform the function that transforms the response body (chunks) into objects of type F
-     * @param <F> return type of the transform
+     * @param <F>       return type of the transform
      * @return a cold observable of ServerResponseElements
      * @see Observable#defer
      */
@@ -162,10 +170,18 @@ public class RxHttpClient {
         return config.getAccept();
     }
 
+    public boolean hasAwsRequestSigner(){
+        return this.awsSigner != null;
+    }
+
+    public Optional<AwsSignature4Signer> getAwsRequestSigner(){
+        return Optional.ofNullable(this.awsSigner);
+    }
+
     /**
      * Closes the underlying connection
      */
-    public void close(){
+    public void close() {
         this.innerClient.close();
     }
 
@@ -183,6 +199,34 @@ public class RxHttpClient {
 
         private String baseUrl = "";
         private String Accept = "application/json";
+
+        private boolean throttling = false;
+        private int throttlingMaxWait = 0;
+        private int maxConnections = -1;
+
+        public void enableThrottling() {
+            this.throttling = true;
+        }
+
+        public void setThrottlingMaxWait(int throttlingMaxWait) {
+            this.throttlingMaxWait = throttlingMaxWait;
+        }
+
+        public void setMaxConnections(int maxConn) {
+            this.maxConnections = maxConn;
+        }
+
+        public boolean isThrottling() {
+            return throttling;
+        }
+
+        public int getThrottlingMaxWait() {
+            return throttlingMaxWait;
+        }
+
+        public int getMaxConnections() {
+            return maxConnections;
+        }
 
         void setBaseUrl(String baseUrl) {
             this.baseUrl = chopLastForwardSlash(baseUrl);
@@ -212,15 +256,22 @@ public class RxHttpClient {
 
     /**
      * A Builder for {@code RxHttpClient} builders.
-     *
      */
     static public class Builder {
+
+        final private static Logger logger = LoggerFactory.getLogger(RxHttpClient.class);
 
         private AsyncHttpClientConfig.Builder configBuilder = new AsyncHttpClientConfig.Builder();
         final private RestClientConfig rcConfig = new RestClientConfig();
 
+        private boolean isAws = false;
+        private AwsServiceEndPoint awsServiceEndPoint;
+        private AwsCredentialsProvider awsCredentialsProvider;
+
         public RxHttpClient build() {
+            addRestClientConfigsToConfigBuilder();
             AsyncHttpClientConfig config = configBuilder.build();
+
             BuildValidation validation = validate(config);
 
             validation.logWarnings(logger);
@@ -228,17 +279,42 @@ public class RxHttpClient {
                 throw new IllegalStateException(validation.getErrorMessage());
             }
 
-            return new RxHttpClient(new AsyncHttpClient(config), rcConfig);
+            if (isAws && awsCredentialsProvider == null) {
+                throw new IllegalStateException("Aws endpoint specified, but no CredentialsProvider set.");
+            }
+
+            if (isAws) {
+                AwsSignature4Signer signer = new AwsSignature4Signer(this.awsServiceEndPoint, this.awsCredentialsProvider);
+                return new RxHttpClient(new AsyncHttpClient(config), rcConfig, signer);
+            } else {
+                return new RxHttpClient(new AsyncHttpClient(config), rcConfig);
+            }
         }
 
+        /**
+         * Perform additional configBuilder build steps based on rcConfig settings
+         */
+        private void addRestClientConfigsToConfigBuilder() {
+            if(rcConfig.getMaxConnections() > 0) {
+                configBuilder.setMaxConnections(rcConfig.getMaxConnections());
+            }
+            if (rcConfig.getMaxConnections() > 0 && rcConfig.isThrottling() && rcConfig.getThrottlingMaxWait() > 0) {
+                addThrottling(rcConfig.getMaxConnections(), rcConfig.getThrottlingMaxWait());
+            }
+        }
+
+
+        private void addThrottling(int maxConnections, int maxWait) {
+            RequestFilter filter = new ThrottleRequestFilter(maxConnections, maxWait);
+            configBuilder.addRequestFilter(filter);
+        }
 
         /**
          * Sets the default Accept request-header for requests built using this instance.
          *
-         * @see <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html">W3C HTTP 1.1 specs</a>.
-         *
          * @param acceptHeaderValue the Media-range and accept-params to use as value for the Accept request-header field
-         * @return
+         * @return this Builder
+         * @see <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html">W3C HTTP 1.1 specs</a>.
          */
         public RxHttpClient.Builder setAccept(String acceptHeaderValue) {
             rcConfig.setAccept(acceptHeaderValue);
@@ -247,12 +323,14 @@ public class RxHttpClient {
 
         /**
          * Sets the base URL for this client.
-         *
+         * <p>
          * <p>The base url will be prepended to any relative URL path specified in the {@code RequestBuilder}</p>
+         *
          * @param url the base URL for this instance
-         * @return
+         * @return this.Builder
          */
         public RxHttpClient.Builder setBaseUrl(String url) {
+            if (this.isAws) throw new IllegalStateException("Not allowed to set Base URL on AWS EndPoint");
             rcConfig.setBaseUrl(url);
             return this;
         }
@@ -263,26 +341,34 @@ public class RxHttpClient {
          * @param config the AsyncHttpClient config object
          * @return a {@code BuildValidation} containing all Errors and Warnings
          */
-        private BuildValidation validate(AsyncHttpClientConfig config){
+        private BuildValidation validate(AsyncHttpClientConfig config) {
             BuildValidation bv = new BuildValidation();
 
             if (rcConfig.baseUrl.isEmpty()) {
-                bv.addError( "No baseURL is set" );
+                bv.addError("No baseURL is set");
             }
 
             try {
-                new URL( rcConfig.baseUrl );
+                new URL(rcConfig.baseUrl);
             } catch (MalformedURLException e) {
-                bv.addError( "Malformed URL: " + e.getMessage() );
+                bv.addError("Malformed URL: " + e.getMessage());
             }
 
             String messagePrefix = "RxHttpClient for " + rcConfig.baseUrl;
 
             if (!config.isAllowPoolingConnections()) {
-                bv.addWarning( messagePrefix + " has connection pooling disabled!");
+                bv.addWarning(messagePrefix + " has connection pooling disabled!");
             }
 
-            if (config.getMaxConnections() < 0 ) {
+            if (config.getMaxConnections() < 0 && rcConfig.isThrottling()) {
+                bv.addError("Configured throttling, but no max. Connections set");
+            }
+
+            if (rcConfig.isThrottling() && rcConfig.getThrottlingMaxWait() <= 0) {
+                bv.addError("Configured throttling, but timeout is set to " + rcConfig.getThrottlingMaxWait());
+            }
+
+            if (config.getMaxConnections() < 0) {
                 bv.addWarning(messagePrefix + " has no maximum connections set!");
             }
 
@@ -301,7 +387,9 @@ public class RxHttpClient {
          * @return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setMaxConnections(int maxConnections) {
-            configBuilder.setMaxConnections(maxConnections);
+            //we set this setting first on the rcConfig object, because we need this information together with the other throttling settings
+            // to properly configure the RequestThrottler
+            rcConfig.setMaxConnections(maxConnections);
             return this;
         }
 
@@ -316,6 +404,18 @@ public class RxHttpClient {
             return this;
         }
 
+        /**
+         * Throttles requests by blocking until connections in the pool become available, waiting for
+         * the response to arrives before executing the next request.
+         *
+         * @param maxWait timeout in millisceconds
+         * @return this Builder
+         */
+        public RxHttpClient.Builder setThrottling(int maxWait) {
+            rcConfig.enableThrottling();
+            rcConfig.setThrottlingMaxWait(maxWait);
+            return this;
+        }
         /**
          * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can wait when connecting to a remote host
          *
@@ -341,8 +441,8 @@ public class RxHttpClient {
         /**
          * Set the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
          * asynchronous response.
-         *
-         *<p>By default a Cached Threadpool will be used, that will create threads as needed (see {@link Executors#newCachedThreadPool()})</p>
+         * <p>
+         * <p>By default a Cached Threadpool will be used, that will create threads as needed (see {@link Executors#newCachedThreadPool()})</p>
          *
          * @param applicationThreadPool the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
          *                              asynchronous response.
@@ -459,7 +559,7 @@ public class RxHttpClient {
 
         /**
          * Set whether connections pooling is enabled.
-         *
+         * <p>
          * <p>Default is set to true</p>
          *
          * @param allowPoolingSslConnections true if enabled
@@ -493,7 +593,7 @@ public class RxHttpClient {
          * <p>
          * See http://download.oracle.com/javase/1.4.2/docs/guide/net/properties.html
          *
-         * @param useProxyProperties
+         * @param useProxyProperties whether AHC should use the default http.proxy* system properties
          */
         public RxHttpClient.Builder setUseProxyProperties(boolean useProxyProperties) {
             configBuilder.setUseProxyProperties(useProxyProperties);
@@ -505,7 +605,7 @@ public class RxHttpClient {
          * <p>
          * See http://docs.oracle.com/javase/7/docs/api/java/net/ProxySelector.html
          *
-         * @param useProxySelector
+         * @param useProxySelector whether AHC should use the default JDK ProxySelector to select a proxy server.
          */
         public RxHttpClient.Builder setUseProxySelector(boolean useProxySelector) {
             configBuilder.setUseProxySelector(useProxySelector);
@@ -560,7 +660,7 @@ public class RxHttpClient {
 
         /**
          * Set the maximum time in millisecond connection can be added to the pool for further reuse
-         *
+         * <p>
          * <p> Default is -1 (no TTL set)</p>
          *
          * @param connectionTTL the maximum time in millisecond connection can be added to the pool for further reuse
@@ -592,6 +692,8 @@ public class RxHttpClient {
             return this;
         }
 
+
+
 //        /**
 //         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeObservably(com.ning.http.client.Request)}
 //         *
@@ -618,8 +720,8 @@ public class RxHttpClient {
         /**
          * Disable automatic url escaping
          *
-         * @param disableUrlEncodingForBoundedRequests
-         * @return this
+         * @param disableUrlEncodingForBoundedRequests disables the url encoding if set to true
+         * @return this Builder
          */
         public RxHttpClient.Builder setDisableUrlEncodingForBoundedRequests(boolean disableUrlEncodingForBoundedRequests) {
             configBuilder.setDisableUrlEncodingForBoundedRequests(disableUrlEncodingForBoundedRequests);
@@ -662,7 +764,7 @@ public class RxHttpClient {
         /**
          * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} will keep connection
          * idle in pool.
-         *
+         * <p>
          * <p>Default is 60000 millis (1 min.)</p>
          *
          * @param pooledConnectionIdleTimeout@return a {@link RxHttpClient.Builder}
@@ -692,6 +794,26 @@ public class RxHttpClient {
          */
         public RxHttpClient.Builder setReadTimeout(int readTimeout) {
             configBuilder.setReadTimeout(readTimeout);
+            return this;
+        }
+
+        public Builder setAwsEndPoint(AwsService service, AwsRegion region) {
+            return setAwsEndPoint(service, region, AwsServiceEndPoint.defaultHostFor(service, region));
+        }
+
+        public Builder setAwsEndPoint(AwsService service, AwsRegion region, String domain) {
+            if (service == null || region == null) {
+                throw new IllegalArgumentException("No null arguments allowed");
+            }
+            this.awsServiceEndPoint = new AwsServiceEndPoint(service, region, domain);
+            logger.info("Overwriting Base URL to " + this.awsServiceEndPoint.endPointUrl());
+            this.setBaseUrl(this.awsServiceEndPoint.endPointUrl());
+            this.isAws = true;
+            return this;
+        }
+
+        public Builder setAwsCredentialsProvider(AwsCredentialsProvider provider) {
+            this.awsCredentialsProvider = provider;
             return this;
         }
     }
@@ -725,7 +847,7 @@ public class RxHttpClient {
         }
 
         void logWarnings(Logger logger) {
-            for (String msg: warnings){
+            for (String msg : warnings) {
                 logger.warn(msg);
             }
         }
