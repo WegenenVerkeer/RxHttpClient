@@ -34,7 +34,7 @@ trait BuildSettings {
     crossScalaVersions := Seq("2.10.3", "2.11.7"),
     scalacOptions := ScalaBuildOptions,
     parallelExecution := false,
-    resolvers +=  "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
+      resolvers +=  "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
     resolvers += Resolver.typesafeRepo("releases"),
     libraryDependencies ++= extraDependencies
 
@@ -72,7 +72,8 @@ trait BuildSettings {
 
   lazy val extraJavaSettings = Seq(
     crossPaths := false,
-    autoScalaLibrary := false
+    autoScalaLibrary := false,
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
   )
 
 

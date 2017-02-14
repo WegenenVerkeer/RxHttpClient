@@ -1,16 +1,9 @@
 package be.wegenenverkeer.rxhttp.aws;
 
 
-
-import org.apache.commons.codec.binary.StringUtils;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.BitSet;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,7 +12,7 @@ import java.util.regex.Pattern;
 /**
  * A collection of utilities for encoding URLs.
  *
- * @since 4.0
+ *
  */
 public class UrlEncoder {
 
