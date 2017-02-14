@@ -1,5 +1,4 @@
 import sbt._
-import com.typesafe.sbt.SbtSite._
 
 object RxHttpClientBuild extends Build
 			  	with BuildSettings {
@@ -9,6 +8,11 @@ object RxHttpClientBuild extends Build
 	val Name = "RxHttpClient"
 
 	val javaModuleName = Name + "-java"
+
+	lazy val disablePublishingRoot = Seq(
+		Keys.publishLocal := {},
+		Keys.publish := {}
+	)
 
 	lazy val javaModule = Project(
 		javaModuleName,
@@ -28,7 +32,7 @@ object RxHttpClientBuild extends Build
 	lazy val main = Project(
 		Name,
 		file("."),
-		settings = buildSettings(Name)
+		settings = buildSettings(Name) ++ disablePublishingRoot
 	) .aggregate(javaModule, scalaModule)
 
 }
