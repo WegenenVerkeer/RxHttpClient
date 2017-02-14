@@ -34,12 +34,28 @@ public class AwsSignature4Signer {
     private final boolean doubleUrlEnocde;
 
 
+    /**
+     * Constructs an instance
+     *<p>
+     *     See also:  <a href="https://github.com/aws/aws-sdk-js/issues/853"> https://github.com/aws/aws-sdk-js/issues/853</a> for why
+     *     we need the doubleUrlEncode parameter, and why by default it is set to true.
+     *</p>
+     * @param serviceEndPoint the service Endpoint
+     * @param credentialsProvider the credentials provider
+     * @param doubleUrlEncode whether canonical request URL encode already URL encoded paths
+     */
     public AwsSignature4Signer(AwsServiceEndPoint serviceEndPoint, AwsCredentialsProvider credentialsProvider, boolean doubleUrlEncode) {
         this.endPoint = serviceEndPoint;
         this.credentialsProvider = credentialsProvider;
         this.doubleUrlEnocde = doubleUrlEncode;
     }
 
+    /**
+     * Constructs an instance that double encodes URL paths
+     *
+     * @param serviceEndPoint the service Endpoint
+     * @param credentialsProvider the credentials provider
+     */
     public AwsSignature4Signer(AwsServiceEndPoint serviceEndPoint, AwsCredentialsProvider credentialsProvider){
         this(serviceEndPoint, credentialsProvider, true);
     }
