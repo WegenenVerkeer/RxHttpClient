@@ -27,10 +27,19 @@ import java.util.Scanner;
  */
 public class InstanceCredentialsProvider implements AwsCredentialsProvider {
 
-    final private static String METADATA_URL = "http://169.254.169.254/latest/meta-data/iam/security-credentials/awvMachineDev";
+    final private static String METADATA_URL_BASE = "http://169.254.169.254/latest/meta-data/iam/security-credentials/";
+    final private String metadata_url;
     final private static Logger logger = LoggerFactory.getLogger(InstanceCredentialsProvider.class);
 
     final private Parser parser = new Parser();
+
+    /**
+     * Constructs an instance with the security credentials for the specified IAM role
+     * @param roleName the name of the IAM role to retrieve
+     */
+    public InstanceCredentialsProvider(String roleName) {
+        this.metadata_url = METADATA_URL_BASE + roleName;
+    }
 
     /**
      * Returns the AwsCredentials for this provider
@@ -46,7 +55,7 @@ public class InstanceCredentialsProvider implements AwsCredentialsProvider {
     }
 
     private void retrieveKeys() {
-        logger.info("Retrieving temporary instance credentials from " + METADATA_URL);
+        logger.info("Retrieving temporary instance credentials from " + metadata_url);
         try {
             String meta = retrieveMetadata();
             parser.parse(meta);
@@ -59,7 +68,7 @@ public class InstanceCredentialsProvider implements AwsCredentialsProvider {
     private String retrieveMetadata() throws IOException {
         Scanner s = null;
         try {
-            s = new Scanner(new URL(METADATA_URL).openStream(), "UTF-8");
+            s = new Scanner(new URL(metadata_url).openStream(), "UTF-8");
             return s.useDelimiter("\\A").next();
         } finally {
             if (s != null) {
