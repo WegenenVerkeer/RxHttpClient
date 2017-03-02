@@ -15,8 +15,8 @@ import java.util.Scanner;
 /**
  * An {@code AwsCredentialsProvider} that retrieves (temporary) credentials from the EC2 instance metadata service.
  * <p>
- *     The provider will retrieve and cache the credentials. Before each invocation of {@code InstanceCredentialsProvier#getAwsCredentials()},
- *     the service will check whether the credentials need to be refreshed.
+ * The provider will retrieve and cache the credentials. Before each invocation of {@code InstanceCredentialsProvier#getAwsCredentials()},
+ * the service will check whether the credentials need to be refreshed.
  * </p>
  * <p>
  * See the <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#instance-metadata-security-credentials">Retrieving Security Credentials from Instance Metadata</a>, and
@@ -28,18 +28,43 @@ import java.util.Scanner;
 public class InstanceCredentialsProvider implements AwsCredentialsProvider {
 
     final private static String METADATA_URL_BASE = "http://169.254.169.254/latest/meta-data/iam/security-credentials/";
-    final private String metadata_url;
+    private String roleName;
     final private static Logger logger = LoggerFactory.getLogger(InstanceCredentialsProvider.class);
 
     final private Parser parser = new Parser();
 
     /**
      * Constructs an instance with the security credentials for the specified IAM role
+     *
      * @param roleName the name of the IAM role to retrieve
      */
     public InstanceCredentialsProvider(String roleName) {
-        this.metadata_url = METADATA_URL_BASE + roleName;
+        this.roleName = roleName;
     }
+
+    /**
+     * Constructs an instance
+     * <p>
+     *     When constructing this instance the instance metadata services will be queried for available role names and the first
+     *     role will be selected. This is same behavior as the AWS SDK.
+     * </p>
+     */
+    public InstanceCredentialsProvider() {
+        try {
+            logger.debug("Retrieving role names from " + METADATA_URL_BASE);
+            String roleNamesResponse = retrieveMetadata(METADATA_URL_BASE);
+            logger.debug("Response is: " + roleNamesResponse);
+            String[] roles = roleNamesResponse.trim().split("\n");
+            if (roles.length == 0  ) {
+                throw new RuntimeException("No role names found in response");
+            }
+            roleName = roles[0];
+            logger.info("Using role " + roleName + " as Instance Credentials");
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
 
     /**
      * Returns the AwsCredentials for this provider
@@ -55,9 +80,10 @@ public class InstanceCredentialsProvider implements AwsCredentialsProvider {
     }
 
     private void retrieveKeys() {
+        String metadata_url = METADATA_URL_BASE + roleName;
         logger.info("Retrieving temporary instance credentials from " + metadata_url);
         try {
-            String meta = retrieveMetadata();
+            String meta = retrieveMetadata(metadata_url);
             parser.parse(meta);
         } catch (IOException e) {
             throw new RuntimeException("Failed to retrieve metadata", e);
@@ -65,11 +91,11 @@ public class InstanceCredentialsProvider implements AwsCredentialsProvider {
 
     }
 
-    private String retrieveMetadata() throws IOException {
+    private String retrieveMetadata(String url) throws IOException {
         Scanner s = null;
         try {
-            s = new Scanner(new URL(metadata_url).openStream(), "UTF-8");
-            return s.useDelimiter("\\A").next();
+            s = new Scanner(new URL(url).openStream(), "UTF-8");
+            return s.useDelimiter("\\A").next(); // the "\\A" pattern is the "beginning of input" boundary matcher pattern
         } finally {
             if (s != null) {
                 try {
