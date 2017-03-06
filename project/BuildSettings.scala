@@ -11,7 +11,7 @@ trait BuildSettings {
   import Dependencies._
   val Organization = "be.wegenenverkeer"
 
-  val Version = "0.6-SNAPSHOT"
+  val Version = "0.5.2"
 
   val ScalaVersion = "2.12.1"
   val ScalaBuildOptions = Seq("-unchecked", "-deprecation", "-feature",
