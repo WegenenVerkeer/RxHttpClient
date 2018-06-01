@@ -280,10 +280,10 @@ public class ClientRequestBuilder {
         return this;
     }
 
-//    public ClientRequestBuilder setBody(BodyGenerator bodyGenerator) {
-//        inner.setBody(bodyGenerator);
-//        return this;
-//    }
+    public ClientRequestBuilder setBody(BodyGenerator bodyGenerator) {
+        inner.setBody(bodyGenerator);
+        return this;
+    }
 
     public ClientRequestBuilder addHeader(String name, String value) {
         if (name.equalsIgnoreCase("Accept")) {

@@ -15,7 +15,7 @@ object Dependencies {
   val specs2 = "org.specs2" %% "specs2-core" % "3.8.6" % "test"
   val slf4jSimple = "org.slf4j" % "slf4j-simple" % "1.7.6" % "test"
   val wiremock = "com.github.tomakehurst" % "wiremock" % "1.52" % "test"
-  val junitInterface = "com.novocode" % "junit-interface" % "0.10" % "test"
+  val junitInterface = "com.novocode" % "junit-interface" % "0.11" % Test
   val jsonPath = "com.jayway.jsonpath" % "json-path" % "1.2.0" % "test"
 
   val commonDependencies = Seq(
