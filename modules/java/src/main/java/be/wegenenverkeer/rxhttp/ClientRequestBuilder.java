@@ -72,12 +72,13 @@ public class ClientRequestBuilder {
      * @param bytes the content of the part
      * @param contentType The content type, or <code>null</code>
      * @param charset The character encoding, or <code>null</code>
+     * @param filename The filename, or <code>null</code>
      * @param contentId The content id, or <code>null</code>
      * @param transferEncoding The transfer encoding, or <code>null</code>
      * @return this {@code ClientRequestBuilder}
      */
-    public ClientRequestBuilder addByteArrayBodyPart(String name, byte[] bytes, String contentType, Charset charset, String contentId, String transferEncoding) {
-        inner.addBodyPart( new ByteArrayPart(name, bytes, contentType, charset, contentId, transferEncoding) );
+    public ClientRequestBuilder addByteArrayBodyPart(String name, byte[] bytes, String contentType, Charset charset, String filename, String contentId, String transferEncoding) {
+        inner.addBodyPart( new ByteArrayPart(name, bytes, contentType, charset, filename, contentId, transferEncoding) );
         return this;
     }
 
