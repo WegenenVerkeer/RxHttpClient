@@ -1,8 +1,8 @@
 package be.wegenenverkeer.rxhttp;
 
-import be.wegenenverkeer.rxhttp.aws.AwsCredentials;
-import be.wegenenverkeer.rxhttp.aws.AwsSignature4Signer;
-import com.ning.http.client.*;
+import com.ning.http.client.BodyGenerator;
+import com.ning.http.client.Param;
+import com.ning.http.client.RequestBuilder;
 import com.ning.http.client.multipart.ByteArrayPart;
 import com.ning.http.client.multipart.FilePart;
 import com.ning.http.client.multipart.StringPart;
@@ -10,13 +10,10 @@ import com.ning.http.util.UTF8UrlEncoder;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * A Builder for Client Requests.
@@ -41,28 +38,17 @@ public class ClientRequestBuilder {
     public ClientRequest build() {
         sanitize();
         ClientRequest request = new ClientRequest(inner.build());
-        addOptionalAwsHeaders(request);
+        signRequest(request);
         return request;
+    }
+
+    private void signRequest(ClientRequest request) {
+        client.getRequestSigners().forEach(s -> s.sign(request));
     }
 
     private void sanitize(){
         if(!hasAcceptHeader && client.getAccept() != null ) {
             addHeader("Accept", client.getAccept());
-        }
-    }
-
-    private void addOptionalAwsHeaders(ClientRequest request) {
-        if (this.client.hasAwsRequestSigner()) {
-            AwsSignature4Signer signer = this.client.getAwsRequestSigner().get();
-            AwsCredentials credentials = signer.getCredentials();
-            String timeStamp = df.format( ZonedDateTime.now(ZoneOffset.UTC) );
-            request.addHeader("x-amz-date", timeStamp);
-            request.addHeader("host", signer.awsHost());
-            Optional<String> securityToken = credentials.getToken();
-            if( securityToken.isPresent()) {
-                request.addHeader("x-amz-security-token", securityToken.get());
-            }
-            request.addHeader("Authorization", signer.authHeader(request, timeStamp, credentials));
         }
     }
 
@@ -72,12 +58,13 @@ public class ClientRequestBuilder {
      * @param bytes the content of the part
      * @param contentType The content type, or <code>null</code>
      * @param charset The character encoding, or <code>null</code>
+     * @param filename The filename, or <code>null</code>
      * @param contentId The content id, or <code>null</code>
      * @param transferEncoding The transfer encoding, or <code>null</code>
      * @return this {@code ClientRequestBuilder}
      */
-    public ClientRequestBuilder addByteArrayBodyPart(String name, byte[] bytes, String contentType, Charset charset, String contentId, String transferEncoding) {
-        inner.addBodyPart( new ByteArrayPart(name, bytes, contentType, charset, contentId, transferEncoding) );
+    public ClientRequestBuilder addByteArrayBodyPart(String name, byte[] bytes, String contentType, Charset charset, String filename, String contentId, String transferEncoding) {
+        inner.addBodyPart( new ByteArrayPart(name, bytes, contentType, charset, filename, contentId, transferEncoding) );
         return this;
     }
 

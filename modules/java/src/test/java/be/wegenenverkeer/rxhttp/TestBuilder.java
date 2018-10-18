@@ -1,6 +1,6 @@
 package be.wegenenverkeer.rxhttp;
 
-import be.wegenenverkeer.rxhttp.RxHttpClient;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -14,5 +14,11 @@ public class TestBuilder {
         new RxHttpClient.Builder().build();
     }
 
+    @Test
+    public void testRequestSignersAreAdded(){
+        RequestSigner requestSigner = clientRequest -> {};
 
+        RxHttpClient client = new RxHttpClient.Builder().setBaseUrl("http://foo.com").addRequestSigner(requestSigner).build();
+        Assert.assertTrue(client.getRequestSigners().contains(requestSigner));
+    }
 }
