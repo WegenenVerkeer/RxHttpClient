@@ -1,48 +1,56 @@
 package be.wegenenverkeer.rxhttp.aws;
 
 import be.wegenenverkeer.rxhttp.ClientRequest;
-import com.ning.http.util.UTF8UrlEncoder;
+import be.wegenenverkeer.rxhttp.RequestSigner;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
  * Signs Requests to AWS Services, using the v4 Signature protocol
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 06/06/16.
  */
-public class AwsSignature4Signer {
-
+public class AwsSignature4Signer implements RequestSigner {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private final AwsServiceEndPoint endPoint;
     private final AwsCredentialsProvider credentialsProvider;
 
-
     private final DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
+
     private final boolean doubleUrlEnocde;
 
 
     /**
      * Constructs an instance
-     *<p>
-     *     See also:  <a href="https://github.com/aws/aws-sdk-js/issues/853"> https://github.com/aws/aws-sdk-js/issues/853</a> for why
-     *     we need the doubleUrlEncode parameter, and why by default it is set to true.
-     *</p>
-     * @param serviceEndPoint the service Endpoint
+     * <p>
+     * See also:  <a href="https://github.com/aws/aws-sdk-js/issues/853"> https://github.com/aws/aws-sdk-js/issues/853</a> for why
+     * we need the doubleUrlEncode parameter, and why by default it is set to true.
+     * </p>
+     *
+     * @param serviceEndPoint     the service Endpoint
      * @param credentialsProvider the credentials provider
-     * @param doubleUrlEncode whether canonical request URL encode already URL encoded paths
+     * @param doubleUrlEncode     whether canonical request URL encode already URL encoded paths
      */
     public AwsSignature4Signer(AwsServiceEndPoint serviceEndPoint, AwsCredentialsProvider credentialsProvider, boolean doubleUrlEncode) {
         this.endPoint = serviceEndPoint;
@@ -50,13 +58,24 @@ public class AwsSignature4Signer {
         this.doubleUrlEnocde = doubleUrlEncode;
     }
 
+    @Override
+    public void sign(ClientRequest clientRequest) {
+        AwsCredentials credentials = getCredentials();
+        String timeStamp = df.format(ZonedDateTime.now(ZoneOffset.UTC));
+        clientRequest.addHeader("x-amz-date", timeStamp);
+        clientRequest.addHeader("host", awsHost());
+        Optional<String> securityToken = credentials.getToken();
+        securityToken.ifPresent(s -> clientRequest.addHeader("x-amz-security-token", s));
+        clientRequest.addHeader("Authorization", authHeader(clientRequest, timeStamp, credentials));
+    }
+
     /**
      * Constructs an instance that double encodes URL paths
      *
-     * @param serviceEndPoint the service Endpoint
+     * @param serviceEndPoint     the service Endpoint
      * @param credentialsProvider the credentials provider
      */
-    public AwsSignature4Signer(AwsServiceEndPoint serviceEndPoint, AwsCredentialsProvider credentialsProvider){
+    public AwsSignature4Signer(AwsServiceEndPoint serviceEndPoint, AwsCredentialsProvider credentialsProvider) {
         this(serviceEndPoint, credentialsProvider, true);
     }
 
@@ -80,7 +99,7 @@ public class AwsSignature4Signer {
                 + "\n"
                 + signedHeaders(headers)
                 + "\n"
-                + digest( body == null ? "" : body );
+                + digest(body == null ? "" : body);
     }
 
     public AwsCredentials getCredentials() {
@@ -283,5 +302,4 @@ public class AwsSignature4Signer {
     private static String trimAll(String str) {
         return str.trim().replaceAll(" +", " ");
     }
-
 }

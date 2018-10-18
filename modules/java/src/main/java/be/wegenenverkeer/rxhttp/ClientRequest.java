@@ -1,6 +1,7 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.*;
+import com.ning.http.client.Param;
+import com.ning.http.client.Request;
 
 import java.io.File;
 import java.io.InputStream;
@@ -145,8 +146,8 @@ public class ClientRequest {
         return this.request.toString();
     }
 
-    //provided to inject AWS headers after request is built
-    void addHeader(String header, String value) {
+    //provided to inject headers after request is built
+    public void addHeader(String header, String value) {
         List<String> hv = new ArrayList<>();
         hv.add(value);
         this.getHeaders().put(header, hv);
