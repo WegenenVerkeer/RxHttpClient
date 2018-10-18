@@ -10,7 +10,7 @@ object BuildSettings {
 
   val Organization = "be.wegenenverkeer"
 
-  val Version = "0.7-SNAPSHOT"
+  val Version = "0.7"
 
   val ScalaVersion = "2.12.1"
   val ScalaBuildOptions = Seq("-unchecked", "-deprecation", "-feature",
@@ -28,7 +28,7 @@ object BuildSettings {
     organization := Organization,
     name := projectName,
     version := Version,
-    scalaVersion := ScalaVersion,    
+    scalaVersion := ScalaVersion,
     scalacOptions := ScalaBuildOptions,
     parallelExecution := false,
     resolvers +=  "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
@@ -68,7 +68,7 @@ object BuildSettings {
   //      site.includeScaladoc()
 
   lazy val extraJavaSettings = Seq(
-    crossPaths := false,        
+    crossPaths := false,
     autoScalaLibrary := false,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
   )
