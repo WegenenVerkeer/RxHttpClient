@@ -1,7 +1,14 @@
 package be.wegenenverkeer.rxhttp;
 
-import be.wegenenverkeer.rxhttp.aws.*;
-import com.ning.http.client.*;
+import be.wegenenverkeer.rxhttp.aws.AwsCredentialsProvider;
+import be.wegenenverkeer.rxhttp.aws.AwsRegion;
+import be.wegenenverkeer.rxhttp.aws.AwsService;
+import be.wegenenverkeer.rxhttp.aws.AwsServiceEndPoint;
+import be.wegenenverkeer.rxhttp.aws.AwsSignature4Signer;
+import com.ning.http.client.AsyncCompletionHandler;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.AsyncHttpClientConfig;
+import com.ning.http.client.Response;
 import com.ning.http.client.extra.ThrottleRequestFilter;
 import com.ning.http.client.filter.RequestFilter;
 import org.slf4j.Logger;
@@ -15,8 +22,10 @@ import javax.net.ssl.SSLContext;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,19 +44,13 @@ public class RxHttpClient {
 
     final private AsyncHttpClient innerClient;
     final private RestClientConfig config;
-    final private AwsSignature4Signer awsSigner;
+    final private List<RequestSigner> requestSigners;
 
-
-    protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config, AwsSignature4Signer signer) {
+    protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config, RequestSigner... requestSigners) {
         this.innerClient = innerClient;
         this.config = config;
-        this.awsSigner = signer;
+        this.requestSigners = Collections.unmodifiableList(Arrays.asList(requestSigners));
     }
-
-    protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config) {
-        this(innerClient, config, null);
-    }
-
 
     /**
      * * Executes a request and returns an Observable for the complete response.
@@ -170,12 +173,8 @@ public class RxHttpClient {
         return config.getAccept();
     }
 
-    public boolean hasAwsRequestSigner(){
-        return this.awsSigner != null;
-    }
-
-    public Optional<AwsSignature4Signer> getAwsRequestSigner(){
-        return Optional.ofNullable(this.awsSigner);
+    public List<RequestSigner> getRequestSigners(){
+        return requestSigners;
     }
 
     /**
@@ -267,6 +266,7 @@ public class RxHttpClient {
         private boolean isAws = false;
         private AwsServiceEndPoint awsServiceEndPoint;
         private AwsCredentialsProvider awsCredentialsProvider;
+        private List<RequestSigner> requestSigners = new LinkedList<>();
 
         public RxHttpClient build() {
             addRestClientConfigsToConfigBuilder();
@@ -284,11 +284,10 @@ public class RxHttpClient {
             }
 
             if (isAws) {
-                AwsSignature4Signer signer = new AwsSignature4Signer(this.awsServiceEndPoint, this.awsCredentialsProvider);
-                return new RxHttpClient(new AsyncHttpClient(config), rcConfig, signer);
-            } else {
-                return new RxHttpClient(new AsyncHttpClient(config), rcConfig);
+                requestSigners.add(new AwsSignature4Signer(this.awsServiceEndPoint, this.awsCredentialsProvider));
             }
+
+            return new RxHttpClient(new AsyncHttpClient(config), rcConfig, requestSigners.toArray(new RequestSigner[0]));
         }
 
         /**
@@ -307,6 +306,14 @@ public class RxHttpClient {
         private void addThrottling(int maxConnections, int maxWait) {
             RequestFilter filter = new ThrottleRequestFilter(maxConnections, maxWait);
             configBuilder.addRequestFilter(filter);
+        }
+
+        public RxHttpClient.Builder addRequestSigner(RequestSigner requestSigner) {
+            if (requestSigner == null) {
+                throw new IllegalArgumentException("No null argument allowed");
+            }
+            this.requestSigners.add(requestSigner);
+            return this;
         }
 
         /**
