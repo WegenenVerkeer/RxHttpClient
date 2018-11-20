@@ -11,14 +11,15 @@ import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.Response;
 import com.ning.http.client.extra.ThrottleRequestFilter;
 import com.ning.http.client.filter.RequestFilter;
+import com.ning.http.client.oauth.ConsumerKey;
+import com.ning.http.client.oauth.OAuthSignatureCalculator;
+import com.ning.http.client.oauth.RequestToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.subjects.AsyncSubject;
 import rx.subjects.BehaviorSubject;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -30,6 +31,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
 
 import static be.wegenenverkeer.rxhttp.CompleteResponseHandler.withCompleteResponse;
 import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
@@ -268,6 +271,12 @@ public class RxHttpClient {
         private AwsCredentialsProvider awsCredentialsProvider;
         private List<RequestSigner> requestSigners = new LinkedList<>();
 
+        private boolean isOAuth1 = false;
+        private String clientKey;
+        private String clientSecret;
+        private String requestToken;
+        private String requestSecret;
+
         public RxHttpClient build() {
             addRestClientConfigsToConfigBuilder();
             AsyncHttpClientConfig config = configBuilder.build();
@@ -283,11 +292,19 @@ public class RxHttpClient {
                 throw new IllegalStateException("Aws endpoint specified, but no CredentialsProvider set.");
             }
 
+            AsyncHttpClient innerClient = new AsyncHttpClient(config);
+            if (isOAuth1) {
+                ConsumerKey consumerKey = new ConsumerKey(clientKey, clientSecret);
+                RequestToken token = new RequestToken(requestToken, requestSecret);
+                OAuthSignatureCalculator calc = new OAuthSignatureCalculator(consumerKey, token);
+                innerClient.setSignatureCalculator(calc);
+            }
+
             if (isAws) {
                 requestSigners.add(new AwsSignature4Signer(this.awsServiceEndPoint, this.awsCredentialsProvider));
             }
 
-            return new RxHttpClient(new AsyncHttpClient(config), rcConfig, requestSigners.toArray(new RequestSigner[0]));
+            return new RxHttpClient(innerClient, rcConfig, requestSigners.toArray(new RequestSigner[0]));
         }
 
         /**
@@ -821,6 +838,15 @@ public class RxHttpClient {
 
         public Builder setAwsCredentialsProvider(AwsCredentialsProvider provider) {
             this.awsCredentialsProvider = provider;
+            return this;
+        }
+
+        public Builder setOAuth1(String clientKey, String clientSecret, String requestToken, String requestSecret) {
+            this.isOAuth1 = true;
+            this.clientKey = clientKey;
+            this.clientSecret = clientSecret;
+            this.requestToken = requestToken;
+            this.requestSecret = requestSecret;
             return this;
         }
     }
