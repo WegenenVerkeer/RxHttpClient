@@ -6,6 +6,9 @@ import com.ning.http.client.RequestBuilder;
 import com.ning.http.client.multipart.ByteArrayPart;
 import com.ning.http.client.multipart.FilePart;
 import com.ning.http.client.multipart.StringPart;
+import com.ning.http.client.oauth.ConsumerKey;
+import com.ning.http.client.oauth.OAuthSignatureCalculator;
+import com.ning.http.client.oauth.RequestToken;
 import com.ning.http.util.UTF8UrlEncoder;
 
 import java.io.File;
@@ -29,6 +32,12 @@ public class ClientRequestBuilder {
     //mutable state to check conformity to policy
     private boolean hasAcceptHeader;
 
+    private boolean isOAuth1 = false;
+    private String clientKey;
+    private String clientSecret;
+    private String requestToken;
+    private String requestSecret;
+
     ClientRequestBuilder(RxHttpClient client) {
         inner = new RequestBuilder();
         this.client = client;
@@ -37,6 +46,12 @@ public class ClientRequestBuilder {
 
     public ClientRequest build() {
         sanitize();
+        if (isOAuth1) {
+            ConsumerKey consumerKey = new ConsumerKey(clientKey, clientSecret);
+            RequestToken token = new RequestToken(requestToken, requestSecret);
+            OAuthSignatureCalculator calc = new OAuthSignatureCalculator(consumerKey, token);
+            inner.setSignatureCalculator(calc);
+        }
         ClientRequest request = new ClientRequest(inner.build());
         signRequest(request);
         return request;
@@ -152,6 +167,15 @@ public class ClientRequestBuilder {
 
     public ClientRequestBuilder setBody(List<byte[]> data) {
         inner.setBody(data);
+        return this;
+    }
+
+    public ClientRequestBuilder setOAuth1(String clientKey, String clientSecret, String requestToken, String requestSecret) {
+        this.isOAuth1 = true;
+        this.clientKey = clientKey;
+        this.clientSecret = clientSecret;
+        this.requestToken = requestToken;
+        this.requestSecret = requestSecret;
         return this;
     }
 
