@@ -10,9 +10,9 @@ object BuildSettings {
 
   val Organization = "be.wegenenverkeer"
 
-  val Version = "0.8.1"
+  val Version = "2.0.0"
 
-  val ScalaVersion = "2.12.1"
+  val ScalaVersion = "2.12.8"
   val ScalaBuildOptions = Seq("-unchecked", "-deprecation", "-feature",
     "-language:reflectiveCalls",
     "-language:implicitConversions",
