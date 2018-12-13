@@ -1,7 +1,8 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.Param;
-import com.ning.http.client.Request;
+import io.netty.handler.codec.http.HttpHeaders;
+import org.asynchttpclient.Param;
+import org.asynchttpclient.Request;
 
 import java.io.File;
 import java.io.InputStream;
@@ -10,9 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.netty.handler.codec.rtsp.RtspHeaderNames.CONTENT_LENGTH;
+
 /**
  * Wraps a {@link Request} into a more limited interface.
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
 public class ClientRequest {
@@ -28,20 +31,21 @@ public class ClientRequest {
     }
 
     public long getContentLength() {
-        return request.getContentLength();
+        return request.getHeaders().getInt(CONTENT_LENGTH);
     }
 
     public Map<String, List<String>> getHeaders() {
-        return request.getHeaders();
+        HttpHeaders headers = request.getHeaders();
+        return CompatUtilities.headersToMap(headers);
     }
 
-    public Map<String, List<String>> getQueryParams(){
+    public Map<String, List<String>> getQueryParams() {
         List<Param> queryParams = request.getQueryParams();
         Map<String, List<String>> result = new HashMap<>();
         for (Param p : queryParams) {
             String name = p.getName();
             String val = p.getValue();
-            if(result.get(name) == null) {
+            if (result.get(name) == null) {
                 List<String> vals = new ArrayList<>();
                 vals.add(val);
                 result.put(name, vals);
@@ -134,8 +138,9 @@ public class ClientRequest {
 //        return request.getParts();
 //    }
 
+    //TODO -- method should return charset
     public String getBodyEncoding() {
-        return request.getBodyEncoding();
+        return request.getCharset().name();
     }
 
     Request unwrap() {

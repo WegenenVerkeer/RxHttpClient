@@ -1,33 +1,33 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.BodyGenerator;
-import com.ning.http.client.Param;
-import com.ning.http.client.RequestBuilder;
-import com.ning.http.client.multipart.ByteArrayPart;
-import com.ning.http.client.multipart.FilePart;
-import com.ning.http.client.multipart.StringPart;
-import com.ning.http.client.oauth.ConsumerKey;
-import com.ning.http.client.oauth.OAuthSignatureCalculator;
-import com.ning.http.client.oauth.RequestToken;
-import com.ning.http.util.UTF8UrlEncoder;
+import org.asynchttpclient.Param;
+import org.asynchttpclient.RequestBuilder;
+import org.asynchttpclient.oauth.ConsumerKey;
+import org.asynchttpclient.oauth.OAuthSignatureCalculator;
+import org.asynchttpclient.oauth.RequestToken;
+import org.asynchttpclient.request.body.generator.BodyGenerator;
+import org.asynchttpclient.request.body.multipart.ByteArrayPart;
+import org.asynchttpclient.request.body.multipart.FilePart;
+import org.asynchttpclient.request.body.multipart.StringPart;
+import org.asynchttpclient.util.Utf8UrlEncoder;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+
 /**
  * A Builder for Client Requests.
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
 public class ClientRequestBuilder {
 
     final private RequestBuilder inner;
     final private RxHttpClient client;
-    final private DateTimeFormatter df;
 
     //mutable state to check conformity to policy
     private boolean hasAcceptHeader;
@@ -41,7 +41,6 @@ public class ClientRequestBuilder {
     ClientRequestBuilder(RxHttpClient client) {
         inner = new RequestBuilder();
         this.client = client;
-        df = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX");
     }
 
     public ClientRequest build() {
@@ -61,58 +60,60 @@ public class ClientRequestBuilder {
         client.getRequestSigners().forEach(s -> s.sign(request));
     }
 
-    private void sanitize(){
-        if(!hasAcceptHeader && client.getAccept() != null ) {
+    private void sanitize() {
+        if (!hasAcceptHeader && client.getAccept() != null) {
             addHeader("Accept", client.getAccept());
         }
     }
 
     /**
      * Adds a byte array as part in a multi-part request
-     * @param name The name of the part, or <code>null</code>
-     * @param bytes the content of the part
-     * @param contentType The content type, or <code>null</code>
-     * @param charset The character encoding, or <code>null</code>
-     * @param filename The filename, or <code>null</code>
-     * @param contentId The content id, or <code>null</code>
+     *
+     * @param name             The name of the part, or <code>null</code>
+     * @param bytes            the content of the part
+     * @param contentType      The content type, or <code>null</code>
+     * @param charset          The character encoding, or <code>null</code>
+     * @param filename         The filename, or <code>null</code>
+     * @param contentId        The content id, or <code>null</code>
      * @param transferEncoding The transfer encoding, or <code>null</code>
      * @return this {@code ClientRequestBuilder}
      */
     public ClientRequestBuilder addByteArrayBodyPart(String name, byte[] bytes, String contentType, Charset charset, String filename, String contentId, String transferEncoding) {
-        inner.addBodyPart( new ByteArrayPart(name, bytes, contentType, charset, filename, contentId, transferEncoding) );
+        inner.addBodyPart(new ByteArrayPart(name, bytes, contentType, charset, filename, contentId, transferEncoding));
         return this;
     }
 
     /**
      * Adds the content of a {@code File} as part in a multi-part request
-     * @param name The name of the part, or <code>null</code>
-     * @param file the file containing the content of the part
-     * @param contentType The content type, or <code>null</code>
-     * @param charset The character encoding, or <code>null</code>
-     * @param contentId The content id, or <code>null</code>
+     *
+     * @param name             The name of the part, or <code>null</code>
+     * @param file             the file containing the content of the part
+     * @param contentType      The content type, or <code>null</code>
+     * @param charset          The character encoding, or <code>null</code>
+     * @param contentId        The content id, or <code>null</code>
      * @param transferEncoding The transfer encoding, or <code>null</code>
      * @return this {@code ClientRequestBuilder}
      */
     public ClientRequestBuilder addFileBodyPart(String name, File file, String contentType, Charset charset, String fileName, String contentId, String transferEncoding) {
-        inner.addBodyPart( new FilePart(name, file, contentType, charset, fileName, contentId, transferEncoding) );
+        inner.addBodyPart(new FilePart(name, file, contentType, charset, fileName, contentId, transferEncoding));
         return this;
     }
 
     /**
      * Adds the specified {@code String} as part in a multi-part request
-     * @param name The name of the part, or <code>null</code>
-     * @param value the content of the part
-     * @param contentType The content type, or <code>null</code>
-     * @param charset The character encoding, or <code>null</code>
-     * @param contentId The content id, or <code>null</code>
+     *
+     * @param name             The name of the part, or <code>null</code>
+     * @param value            the content of the part
+     * @param contentType      The content type, or <code>null</code>
+     * @param charset          The character encoding, or <code>null</code>
+     * @param contentId        The content id, or <code>null</code>
      * @param transferEncoding The transfer encoding, or <code>null</code>
      * @return this {@code ClientRequestBuilder}
      */
     public ClientRequestBuilder addStringBodyPart(String name, String value, String contentType, Charset charset, String contentId, String transferEncoding) {
-        inner.addBodyPart( new StringPart(name, value, contentType, charset, contentId, transferEncoding) );
+        inner.addBodyPart(new StringPart(name, value, contentType, charset, contentId, transferEncoding));
         return this;
     }
-
 
 
 //    public RequestBuilder addBodyPart(Part part) {
@@ -157,7 +158,7 @@ public class ClientRequestBuilder {
 
     public ClientRequestBuilder setUrlRelativetoBase(String url, boolean urlEncode) {
         if (urlEncode) {
-            inner.setUrl(UTF8UrlEncoder.encodePath(toFullPath(url)));
+            inner.setUrl(Utf8UrlEncoder.encodePath(toFullPath(url)));
         } else {
             inner.setUrl(toFullPath(url));
         }
@@ -256,8 +257,9 @@ public class ClientRequestBuilder {
         return this;
     }
 
+    //TODO -- method should take Charset parameter
     public ClientRequestBuilder setBodyEncoding(String charset) {
-        inner.setBodyEncoding(charset);
+        inner.setCharset(Charset.forName(charset));
         return this;
     }
 
@@ -272,7 +274,7 @@ public class ClientRequestBuilder {
     }
 
     public ClientRequestBuilder setContentLength(int length) {
-        inner.setContentLength(length);
+        inner.setHeader(CONTENT_LENGTH, Integer.toString(length));
         return this;
     }
 
@@ -337,8 +339,8 @@ public class ClientRequestBuilder {
 //        return this;
 //    }
 
-    public ClientRequestBuilder setFollowRedirects(boolean followRedirects) {
-        inner.setFollowRedirects(followRedirects);
+    public ClientRequestBuilder setFollowRedirects(boolean followRedirect) {
+        inner.setFollowRedirect(followRedirect);
         return this;
     }
 
@@ -349,7 +351,7 @@ public class ClientRequestBuilder {
 
     private static String chopFirstForwardSlash(String url) {
         if (url.charAt(0) == '/') {
-            url = url.substring(1, url.length());
+            url = url.substring(1);
         }
         return url;
     }

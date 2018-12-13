@@ -1,12 +1,13 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.Response;
-import com.ning.http.client.cookie.Cookie;
-import com.ning.http.client.uri.Uri;
-import com.ning.http.util.AsyncHttpProviderUtils;
-import java.io.IOException;
+import io.netty.handler.codec.http.cookie.Cookie;
+import org.asynchttpclient.Response;
+import org.asynchttpclient.uri.Uri;
+import org.asynchttpclient.util.HttpUtils;
+
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -43,46 +44,35 @@ public class ServerResponse implements ServerResponseStatus, ServerResponseHeade
     }
 
 
-    public String getResponseBody(String charset) {
-        try {
-            return response.getResponseBody(charset);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public String getResponseBody(Charset charset) {
+        return response.getResponseBody(charset);
     }
 
     public String getResponseBody() {
 
-        Optional<String> parsedCharset =
+        Optional<Charset> parsedCharset =
                 Optional
-                .ofNullable(response.getContentType()) // content-type can be null
-                .flatMap( contentType ->
-                        // parseCharset can also return null
-                        Optional.ofNullable(AsyncHttpProviderUtils.parseCharset(contentType))
-                );
+                        .ofNullable(response.getContentType()) // content-type can be null
+                        .flatMap(contentType ->
+                                // parseCharset can also return null
+                                Optional.ofNullable(HttpUtils.extractContentTypeCharsetAttribute(contentType))
+                        );
 
-        String charset = parsedCharset.orElseGet(StandardCharsets.UTF_8::name);
+        Charset charset = parsedCharset.orElse(StandardCharsets.UTF_8);
         return getResponseBody(charset);
     }
 
     public byte[] getResponseBodyAsBytes() {
-        try {
-            return response.getResponseBodyAsBytes();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return response.getResponseBodyAsBytes();
     }
 
     public InputStream getResponseBodyAsStream() {
-        try {
-            return response.getResponseBodyAsStream();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return response.getResponseBodyAsStream();
     }
 
     public Map<String, List<String>> getHeaders() {
-        return response.getHeaders();
+        return
+                CompatUtilities.headersToMap(response.getHeaders());
     }
 
     public boolean hasResponseHeaders() {
@@ -102,11 +92,7 @@ public class ServerResponse implements ServerResponseStatus, ServerResponseHeade
     }
 
     public ByteBuffer getResponseBodyAsByteBuffer() {
-        try {
-            return response.getResponseBodyAsByteBuffer();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return response.getResponseBodyAsByteBuffer();
     }
 
     public Optional<String> getContentType() {
@@ -126,19 +112,12 @@ public class ServerResponse implements ServerResponseStatus, ServerResponseHeade
     }
 
     public String getResponseBodyExcerpt(int maxLength) {
-        try {
-            return response.getResponseBodyExcerpt(maxLength);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return CompatUtilities.bodyExcerpt(response, maxLength);
     }
 
     public String getResponseBodyExcerpt(int maxLength, String charset) {
-        try {
-            return response.getResponseBodyExcerpt(maxLength, charset);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return CompatUtilities.bodyExcerpt(response, maxLength, charset);
+
     }
 
     public Optional<String> getHeader(String name) {
@@ -152,7 +131,11 @@ public class ServerResponse implements ServerResponseStatus, ServerResponseHeade
 
 
     @Override
-    public <T> T match(Function<ServerResponseStatus, T> matchStatus, Function<ServerResponseHeaders, T> matchHeaders, Function<ServerResponseBodyPart, T> matchBodyPart, Function<ServerResponse, T> matchServerResponse) {
+    public <T> T match(
+            Function<ServerResponseStatus, T> matchStatus,
+            Function<ServerResponseHeaders, T> matchHeaders,
+            Function<ServerResponseBodyPart, T> matchBodyPart,
+            Function<ServerResponse, T> matchServerResponse) {
         return matchServerResponse.apply(this);
     }
 

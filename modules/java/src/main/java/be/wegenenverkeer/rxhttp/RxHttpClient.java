@@ -5,21 +5,18 @@ import be.wegenenverkeer.rxhttp.aws.AwsRegion;
 import be.wegenenverkeer.rxhttp.aws.AwsService;
 import be.wegenenverkeer.rxhttp.aws.AwsServiceEndPoint;
 import be.wegenenverkeer.rxhttp.aws.AwsSignature4Signer;
-import com.ning.http.client.AsyncCompletionHandler;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.Response;
-import com.ning.http.client.extra.ThrottleRequestFilter;
-import com.ning.http.client.filter.RequestFilter;
-import com.ning.http.client.oauth.ConsumerKey;
-import com.ning.http.client.oauth.OAuthSignatureCalculator;
-import com.ning.http.client.oauth.RequestToken;
+
+import io.netty.handler.ssl.SslContext;
+import org.asynchttpclient.*;
+import org.asynchttpclient.filter.RequestFilter;
+import org.asynchttpclient.filter.ThrottleRequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.subjects.AsyncSubject;
 import rx.subjects.BehaviorSubject;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -30,12 +27,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Function;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
 import static be.wegenenverkeer.rxhttp.CompleteResponseHandler.withCompleteResponse;
 import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
+import static org.asynchttpclient.Dsl.asyncHttpClient;
 
 /**
  * A Reactive HTTP Client
@@ -66,7 +65,7 @@ public class RxHttpClient {
 
         innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandler<F>() {
             @Override
-            public F onCompleted(Response response) throws Exception {
+            public F onCompleted(Response response) {
                 try {
                     withCompleteResponse(response,
                             (r) -> {
@@ -184,7 +183,11 @@ public class RxHttpClient {
      * Closes the underlying connection
      */
     public void close() {
-        this.innerClient.close();
+        try {
+            this.innerClient.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -263,7 +266,7 @@ public class RxHttpClient {
 
         final private static Logger logger = LoggerFactory.getLogger(RxHttpClient.class);
 
-        private AsyncHttpClientConfig.Builder configBuilder = new AsyncHttpClientConfig.Builder();
+        private DefaultAsyncHttpClientConfig.Builder configBuilder = new DefaultAsyncHttpClientConfig.Builder();
         final private RestClientConfig rcConfig = new RestClientConfig();
 
         private boolean isAws = false;
@@ -273,7 +276,7 @@ public class RxHttpClient {
 
         public RxHttpClient build() {
             addRestClientConfigsToConfigBuilder();
-            AsyncHttpClientConfig config = configBuilder.build();
+            DefaultAsyncHttpClientConfig config = configBuilder.build();
 
             BuildValidation validation = validate(config);
 
@@ -286,7 +289,7 @@ public class RxHttpClient {
                 throw new IllegalStateException("Aws endpoint specified, but no CredentialsProvider set.");
             }
 
-            AsyncHttpClient innerClient = new AsyncHttpClient(config);
+            AsyncHttpClient innerClient = asyncHttpClient(config);
 
             if (isAws) {
                 requestSigners.add(new AwsSignature4Signer(this.awsServiceEndPoint, this.awsCredentialsProvider));
@@ -353,7 +356,7 @@ public class RxHttpClient {
          * @param config the AsyncHttpClient config object
          * @return a {@code BuildValidation} containing all Errors and Warnings
          */
-        private BuildValidation validate(AsyncHttpClientConfig config) {
+        private BuildValidation validate(DefaultAsyncHttpClientConfig config) {
             BuildValidation bv = new BuildValidation();
 
             if (rcConfig.baseUrl.isEmpty()) {
@@ -368,8 +371,8 @@ public class RxHttpClient {
 
             String messagePrefix = "RxHttpClient for " + rcConfig.baseUrl;
 
-            if (!config.isAllowPoolingConnections()) {
-                bv.addWarning(messagePrefix + " has connection pooling disabled!");
+            if (!config.isKeepAlive()) {
+                bv.addWarning(messagePrefix + " has ChannelPool (KeepAlive) support disabled!");
             }
 
             if (config.getMaxConnections() < 0 && rcConfig.isThrottling()) {
@@ -384,7 +387,7 @@ public class RxHttpClient {
                 bv.addWarning(messagePrefix + " has no maximum connections set!");
             }
 
-            if (config.getConnectionTTL() < 0 && config.getPooledConnectionIdleTimeout() < 0) {
+            if (config.getConnectionTtl() < 0 && config.getPooledConnectionIdleTimeout() < 0) {
                 bv.addWarning(messagePrefix + " has no connection TTL or pool idle timeout set!");
             }
 
@@ -393,9 +396,9 @@ public class RxHttpClient {
 
 
         /**
-         * Set the maximum number of connections an {@link com.ning.http.client.AsyncHttpClient} can handle.
+         * Set the maximum number of connections an {@link org.asynchttpclient.AsyncHttpClient} can handle.
          *
-         * @param maxConnections the maximum number of connections an {@link com.ning.http.client.AsyncHttpClient} can handle.
+         * @param maxConnections the maximum number of connections an {@link org.asynchttpclient.AsyncHttpClient} can handle.
          * @return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setMaxConnections(int maxConnections) {
@@ -408,11 +411,24 @@ public class RxHttpClient {
         /**
          * Set true if connection can be pooled by a ChannelPool. Default is true.
          *
+         *  @deprecated Use setKeepAlive(boolean) instead
+         *
          * @param allowPoolingConnections true if connection can be pooled by a ChannelPool
          * @return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setAllowPoolingConnections(boolean allowPoolingConnections) {
-            configBuilder.setAllowPoolingConnections(allowPoolingConnections);
+            configBuilder.setKeepAlive(allowPoolingConnections);
+            return this;
+        }
+
+        /**
+         * Set true if connection can be pooled by a ChannelPool. Default is true.
+         *
+         * @param keepAlive true if connection can be pooled by a ChannelPool
+         * @return a {@link RxHttpClient.Builder}
+         */
+        public RxHttpClient.Builder setKeepAlive(boolean keepAlive) {
+            configBuilder.setKeepAlive(keepAlive);
             return this;
         }
 
@@ -429,9 +445,9 @@ public class RxHttpClient {
             return this;
         }
         /**
-         * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can wait when connecting to a remote host
+         * Set the maximum time in millisecond an {@link org.asynchttpclient.AsyncHttpClient} can wait when connecting to a remote host
          *
-         * @param connectTimeOut the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can wait when connecting to a remote host
+         * @param connectTimeOut the maximum time in millisecond an {@link org.asynchttpclient.AsyncHttpClient} can wait when connecting to a remote host
          * @return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setConnectTimeout(int connectTimeOut) {
@@ -440,9 +456,9 @@ public class RxHttpClient {
         }
 
 //        /**
-//         * Set the {@link com.ning.http.client.Realm}  that will be used for all requests.
+//         * Set the {@link org.asynchttpclient.Realm}  that will be used for all requests.
 //         *
-//         * @param realm the {@link com.ning.http.client.Realm}
+//         * @param realm the {@link org.asynchttpclient.Realm}
 //         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
 //         */
 //        public RestClient.Builder setRealm(Realm realm) {
@@ -451,28 +467,15 @@ public class RxHttpClient {
 //        }
 
         /**
-         * Set the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
+         * Set the {@link java.util.concurrent.ExecutorService} an {@link org.asynchttpclient.AsyncHttpClient} uses for handling
          * asynchronous response.
          * <p>
-         * <p>By default a Cached Threadpool will be used, that will create threads as needed (see {@link Executors#newCachedThreadPool()})</p>
-         *
-         * @param applicationThreadPool the {@link java.util.concurrent.ExecutorService} an {@link com.ning.http.client.AsyncHttpClient} use for handling
+         * @param threadFactory the {@code threadFactory} an {@link org.asynchttpclient.AsyncHttpClient} use for handling
          *                              asynchronous response.
          * @return a {@link RxHttpClient.Builder}
          */
-        public RxHttpClient.Builder setExecutorService(ExecutorService applicationThreadPool) {
-            configBuilder.setExecutorService(applicationThreadPool);
-            return this;
-        }
-
-        /**
-         * Set the maximum time in millisecond an {@link com.ning.http.client.ws.WebSocket} can stay idle.
-         *
-         * @param webSocketTimeout the maximum time in millisecond an {@link com.ning.http.client.ws.WebSocket} can stay idle.
-         * @return a {@link RxHttpClient.Builder}
-         */
-        public RxHttpClient.Builder setWebSocketTimeout(int webSocketTimeout) {
-            configBuilder.setWebSocketTimeout(webSocketTimeout);
+        public RxHttpClient.Builder setThreadFactory(ThreadFactory threadFactory) {
+            configBuilder.setThreadFactory(threadFactory);
             return this;
         }
 
@@ -492,21 +495,23 @@ public class RxHttpClient {
 //            return this;
 //        }
 
-        /**
-         * Set the {@link javax.net.ssl.HostnameVerifier}
-         *
-         * @param hostnameVerifier {@link javax.net.ssl.HostnameVerifier}
-         * @return this
-         */
-        public RxHttpClient.Builder setHostnameVerifier(HostnameVerifier hostnameVerifier) {
-            configBuilder.setHostnameVerifier(hostnameVerifier);
-            return this;
-        }
+
+        //TODO -- check https://github.com/AsyncHttpClient/async-http-client/issues/622 : is there a replacement for hostnameverifier??
+//        /**
+//         * Set the {@link javax.net.ssl.HostnameVerifier}
+//         *
+//         * @param hostnameVerifier {@link javax.net.ssl.HostnameVerifier}
+//         * @return this
+//         */
+//        public RxHttpClient.Builder setHostnameVerifier(HostnameVerifier hostnameVerifier) {
+//            configBuilder.setHostnameVerifier(hostnameVerifier);
+//            return this;
+//        }
 
 //        /**
-//         * Set an instance of {@link com.ning.http.client.ProxyServerSelector} used by an {@link com.ning.http.client.AsyncHttpClient}
+//         * Set an instance of {@link org.asynchttpclient.ProxyServerSelector} used by an {@link org.asynchttpclient.AsyncHttpClient}
 //         *
-//         * @param proxyServerSelector instance of {@link com.ning.http.client.ProxyServerSelector}
+//         * @param proxyServerSelector instance of {@link org.asynchttpclient.ProxyServerSelector}
 //         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
 //         */
 //        public RestClient.Builder setProxyServerSelector(ProxyServerSelector proxyServerSelector) {
@@ -515,9 +520,9 @@ public class RxHttpClient {
 //        }
 
 //        /**
-//         * Remove an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeObservably(com.ning.http.client.Request)}
+//         * Remove an {@link org.asynchttpclient.filter.RequestFilter} that will be invoked before {@link org.asynchttpclient.AsyncHttpClient#executeObservably(org.asynchttpclient.Request)}
 //         *
-//         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
+//         * @param requestFilter {@link org.asynchttpclient.filter.RequestFilter}
 //         * @return this
 //         */
 //        public RestClient.Builder removeRequestFilter(RequestFilter requestFilter) {
@@ -531,9 +536,9 @@ public class RxHttpClient {
         }
 
 //        /**
-//         * Set an instance of {@link com.ning.http.client.ProxyServer} used by an {@link com.ning.http.client.AsyncHttpClient}
+//         * Set an instance of {@link org.asynchttpclient.ProxyServer} used by an {@link org.asynchttpclient.AsyncHttpClient}
 //         *
-//         * @param proxyServer instance of {@link com.ning.http.client.ProxyServer}
+//         * @param proxyServer instance of {@link org.asynchttpclient.ProxyServer}
 //         * @return a {@link be.wegenenverkeer.rest.RestClient.Builder}
 //         */
 //        public RestClient.Builder setProxyServer(ProxyServer proxyServer) {
@@ -541,22 +546,23 @@ public class RxHttpClient {
 //            return this;
 //        }
 
-        /**
-         * Configures this AHC instance to use relative URIs instead of absolute ones when talking with a SSL proxy or WebSocket proxy.
-         *
-         * @param useRelativeURIsWithConnectProxies use relative URIs with connect proxies
-         * @return this
-         * @since 1.8.13
-         */
-        public RxHttpClient.Builder setUseRelativeURIsWithConnectProxies(boolean useRelativeURIsWithConnectProxies) {
-            configBuilder.setUseRelativeURIsWithConnectProxies(useRelativeURIsWithConnectProxies);
-            return this;
-        }
+        //TODO -- seems to be removed??
+//        /**
+//         * Configures this AHC instance to use relative URIs instead of absolute ones when talking with a SSL proxy or WebSocket proxy.
+//         *
+//         * @param useRelativeURIsWithConnectProxies use relative URIs with connect proxies
+//         * @return this
+//         * @since 1.8.13
+//         */
+//        public RxHttpClient.Builder setUseRelativeURIsWithConnectProxies(boolean useRelativeURIsWithConnectProxies) {
+//            configBuilder. setUseRelativeURIsWithConnectProxies(useRelativeURIsWithConnectProxies);
+//            return this;
+//        }
 
 //        /**
-//         * Set the maximum number of connections per hosts an {@link com.ning.http.client.AsyncHttpClient} can handle.
+//         * Set the maximum number of connections per hosts an {@link org.asynchttpclient.AsyncHttpClient} can handle.
 //         *
-//         * @param maxConnectionsPerHost the maximum number of connections per host an {@link com.ning.http.client.AsyncHttpClient} can handle.
+//         * @param maxConnectionsPerHost the maximum number of connections per host an {@link org.asynchttpclient.AsyncHttpClient} can handle.
 //         * @return a {@link RxHttpClient.Builder}
 //         */
 //        public RxHttpClient.Builder setMaxConnectionsPerHost(int maxConnectionsPerHost) {
@@ -569,24 +575,25 @@ public class RxHttpClient {
             return this;
         }
 
-        /**
-         * Set whether connections pooling is enabled.
-         * <p>
-         * <p>Default is set to true</p>
-         *
-         * @param allowPoolingSslConnections true if enabled
-         * @return this
-         */
-        public RxHttpClient.Builder setAllowPoolingSslConnections(boolean allowPoolingSslConnections) {
-            configBuilder.setAllowPoolingSslConnections(allowPoolingSslConnections);
-            return this;
-        }
+        //TODO -- seems to be removed??
+//        /**
+//         * Set whether connections pooling is enabled.
+//         * <p>
+//         * <p>Default is set to true</p>
+//         *
+//         * @param allowPoolingSslConnections true if enabled
+//         * @return this
+//         */
+//        public RxHttpClient.Builder setAllowPoolingSslConnections(boolean allowPoolingSslConnections) {
+//            configBuilder.setKConnections(allowPoolingSslConnections);
+//            return this;
+//        }
 
 //        /**
-//         * Remove an {@link com.ning.http.client.filter.ResponseFilter} that will be invoked as soon as the response is
-//         * received, and before {@link com.ning.http.client.AsyncHandler#onStatusReceived(com.ning.http.client.HttpResponseStatus)}.
+//         * Remove an {@link org.asynchttpclient.filter.ResponseFilter} that will be invoked as soon as the response is
+//         * received, and before {@link org.asynchttpclient.AsyncHandler#onStatusReceived(org.asynchttpclient.HttpResponseStatus)}.
 //         *
-//         * @param responseFilter an {@link com.ning.http.client.filter.ResponseFilter}
+//         * @param responseFilter an {@link org.asynchttpclient.filter.ResponseFilter}
 //         * @return this
 //         */
 //        public RestClient.Builder removeResponseFilter(ResponseFilter responseFilter) {
@@ -625,10 +632,10 @@ public class RxHttpClient {
         }
 
 //        /**
-//         * Add an {@link com.ning.http.client.filter.ResponseFilter} that will be invoked as soon as the response is
-//         * received, and before {@link com.ning.http.client.AsyncHandler#onStatusReceived(com.ning.http.client.HttpResponseStatus)}.
+//         * Add an {@link org.asynchttpclient.filter.ResponseFilter} that will be invoked as soon as the response is
+//         * received, and before {@link org.asynchttpclient.AsyncHandler#onStatusReceived(org.asynchttpclient.HttpResponseStatus)}.
 //         *
-//         * @param responseFilter an {@link com.ning.http.client.filter.ResponseFilter}
+//         * @param responseFilter an {@link org.asynchttpclient.filter.ResponseFilter}
 //         * @return this
 //         */
 //        public RestClient.Builder addResponseFilter(ResponseFilter responseFilter) {
@@ -647,13 +654,14 @@ public class RxHttpClient {
             return this;
         }
 
+        //@Deprecated "Use setUserInsecureTrustaManager"
         public RxHttpClient.Builder setAcceptAnyCertificate(boolean acceptAnyCertificate) {
-            configBuilder.setAcceptAnyCertificate(acceptAnyCertificate);
+            configBuilder.setUseInsecureTrustManager(acceptAnyCertificate);
             return this;
         }
 
-        public RxHttpClient.Builder setIOThreadMultiplier(int multiplier) {
-            configBuilder.setIOThreadMultiplier(multiplier);
+        public RxHttpClient.Builder setUseInsecureTrustManager(boolean useInsecureTrustManager) {
+            configBuilder.setUseInsecureTrustManager(useInsecureTrustManager);
             return this;
         }
 
@@ -675,11 +683,13 @@ public class RxHttpClient {
          * <p>
          * <p> Default is -1 (no TTL set)</p>
          *
+         *
          * @param connectionTTL the maximum time in millisecond connection can be added to the pool for further reuse
          * @return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setConnectionTTL(int connectionTTL) {
-            configBuilder.setConnectionTTL(connectionTTL);
+            //TODO deprecate and change to camelcase
+            configBuilder.setConnectionTtl(connectionTTL);
             return this;
         }
 
@@ -707,9 +717,9 @@ public class RxHttpClient {
 
 
 //        /**
-//         * Add an {@link com.ning.http.client.filter.RequestFilter} that will be invoked before {@link com.ning.http.client.AsyncHttpClient#executeObservably(com.ning.http.client.Request)}
+//         * Add an {@link org.asynchttpclient.filter.RequestFilter} that will be invoked before {@link org.asynchttpclient.AsyncHttpClient#executeObservably(org.asynchttpclient.Request)}
 //         *
-//         * @param requestFilter {@link com.ning.http.client.filter.RequestFilter}
+//         * @param requestFilter {@link org.asynchttpclient.filter.RequestFilter}
 //         * @return this
 //         */
 //        public RestClient.Builder addRequestFilter(RequestFilter requestFilter) {
@@ -718,10 +728,10 @@ public class RxHttpClient {
 //        }
 
 //        /**
-//         * Add an {@link com.ning.http.client.filter.IOExceptionFilter} that will be invoked when an {@link java.io.IOException}
+//         * Add an {@link org.asynchttpclient.filter.IOExceptionFilter} that will be invoked when an {@link java.io.IOException}
 //         * occurs during the download/upload operations.
 //         *
-//         * @param ioExceptionFilter an {@link com.ning.http.client.filter.ResponseFilter}
+//         * @param ioExceptionFilter an {@link org.asynchttpclient.filter.ResponseFilter}
 //         * @return this
 //         */
 //        public RestClient.Builder addIOExceptionFilter(IOExceptionFilter ioExceptionFilter) {
@@ -732,18 +742,30 @@ public class RxHttpClient {
         /**
          * Disable automatic url escaping
          *
+         * @deprecated Use setDisableUrlEncodingForBoundRequests
          * @param disableUrlEncodingForBoundedRequests disables the url encoding if set to true
          * @return this Builder
          */
         public RxHttpClient.Builder setDisableUrlEncodingForBoundedRequests(boolean disableUrlEncodingForBoundedRequests) {
-            configBuilder.setDisableUrlEncodingForBoundedRequests(disableUrlEncodingForBoundedRequests);
+            configBuilder.setDisableUrlEncodingForBoundRequests(disableUrlEncodingForBoundedRequests);
             return this;
         }
 
         /**
-         * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} waits until the response is completed.
+         * Disable automatic url escaping
          *
-         * @param requestTimeout the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} waits until the response is completed.
+         * @param disableUrlEncodingForBoundedRequests disables the url encoding if set to true
+         * @return this Builder
+         */
+        public RxHttpClient.Builder setDisableUrlEncodingForBoundRequests(boolean disableUrlEncodingForBoundedRequests) {
+            configBuilder.setDisableUrlEncodingForBoundRequests(disableUrlEncodingForBoundedRequests);
+            return this;
+        }
+
+        /**
+         * Set the maximum time in millisecond an {@link org.asynchttpclient.AsyncHttpClient} waits until the response is completed.
+         *
+         * @param requestTimeout the maximum time in millisecond an {@link org.asynchttpclient.AsyncHttpClient} waits until the response is completed.
          * @return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setRequestTimeout(int requestTimeout) {
@@ -752,13 +774,14 @@ public class RxHttpClient {
         }
 
         /**
-         * Set the {@link javax.net.ssl.SSLContext} for secure connection.
+         * Set the {@link io.netty.handler.ssl.SslContext} for secure connection.
          *
-         * @param sslContext the {@link javax.net.ssl.SSLContext} for secure connection
+         * @param sslContext the SSLContext for secure connection
          * @return a {@link RxHttpClient.Builder}
          */
-        public RxHttpClient.Builder setSSLContext(SSLContext sslContext) {
-            configBuilder.setSSLContext(sslContext);
+        public RxHttpClient.Builder setSslContext(SslContext sslContext) {
+            //TODO Can we hide this context behind javax.net.ssl interface (as before)??
+            configBuilder.setSslContext(sslContext);
             return this;
         }
 
@@ -774,7 +797,7 @@ public class RxHttpClient {
         }
 
         /**
-         * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} will keep connection
+         * Set the maximum time in millisecond an {@link org.asynchttpclient.AsyncHttpClient} will keep connection
          * idle in pool.
          * <p>
          * <p>Default is 60000 millis (1 min.)</p>
@@ -787,10 +810,10 @@ public class RxHttpClient {
         }
 
 //        /**
-//         * Remove an {@link com.ning.http.client.filter.IOExceptionFilter} tthat will be invoked when an {@link java.io.IOException}
+//         * Remove an {@link org.asynchttpclient.filter.IOExceptionFilter} tthat will be invoked when an {@link java.io.IOException}
 //         * occurs during the download/upload operations.
 //         *
-//         * @param ioExceptionFilter an {@link com.ning.http.client.filter.ResponseFilter}
+//         * @param ioExceptionFilter an {@link org.asynchttpclient.filter.ResponseFilter}
 //         * @return this
 //         */
 //        public RestClient.Builder removeIOExceptionFilter(IOExceptionFilter ioExceptionFilter) {
@@ -799,7 +822,7 @@ public class RxHttpClient {
 //        }
 
         /**
-         * Set the maximum time in millisecond an {@link com.ning.http.client.AsyncHttpClient} can stay idle.
+         * Set the maximum time in millisecond an {@link org.asynchttpclient.AsyncHttpClient} can stay idle.
          *
          * @param readTimeout the maximum time in millisecond an {@code RestClient} can stay idle.
          * @return a {@link RxHttpClient.Builder}

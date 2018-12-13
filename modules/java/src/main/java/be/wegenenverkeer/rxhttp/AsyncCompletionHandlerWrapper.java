@@ -1,7 +1,7 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.AsyncCompletionHandler;
-import com.ning.http.client.Response;
+import org.asynchttpclient.AsyncCompletionHandler;
+import org.asynchttpclient.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.exceptions.OnErrorFailedException;
@@ -38,7 +38,7 @@ class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
     }
 
     @Override
-    public F onCompleted(Response response) throws Exception {
+    public F onCompleted(Response response) {
         try {
             withCompleteResponse(
                     response,
@@ -47,8 +47,8 @@ class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
                         if (value != null) subject.onNext(value);
                         subject.onCompleted();
                     },
-                    (ex) -> subject.onError(ex),
-                    (ex) -> subject.onError(ex)
+                    subject::onError,
+                    subject::onError
             );
         } catch (Throwable t) {
             //TODO Should this logging not be done in the global onError handler? See Class RxJavaErrorHandler
