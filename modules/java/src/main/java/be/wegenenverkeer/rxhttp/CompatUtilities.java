@@ -32,15 +32,6 @@ public class CompatUtilities {
         return result;
     }
 
-    public static int remaining(ByteBuf buffer) {
-        return buffer.writableBytes();
-    }
-
-    public static void put(ByteBuf buffer, byte[] bytes, int srcIndex, int length) {
-        buffer.writeBytes(bytes, srcIndex, length);
-
-    }
-
     public static String bodyExcerpt(Response response, int maxLength) {
         return bodyExcerpt(response, maxLength, "UTF-8");
     }

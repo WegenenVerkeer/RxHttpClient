@@ -113,10 +113,10 @@ public class ObservableBodyGenerator implements BodyGenerator {
             }
 
             // there is data available
-            int size = Math.min(nextPart.buffer.remaining(), CompatUtilities.remaining(targetBuf));
+            int size = Math.min(nextPart.buffer.remaining(), targetBuf.writableBytes());
             int position = nextPart.buffer.position();
             if (size > 0) {
-                CompatUtilities.put(targetBuf,nextPart.buffer.array(), 0, size);
+                targetBuf.writeBytes(nextPart.buffer.array(), 0, size);
                 nextPart.buffer.position(position + size);
             }
 
