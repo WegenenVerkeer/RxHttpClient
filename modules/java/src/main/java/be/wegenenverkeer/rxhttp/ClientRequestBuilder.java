@@ -1,5 +1,6 @@
 package be.wegenenverkeer.rxhttp;
 
+import org.asynchttpclient.BoundRequestBuilder;
 import org.asynchttpclient.Param;
 import org.asynchttpclient.RequestBuilder;
 import org.asynchttpclient.oauth.ConsumerKey;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+import static org.asynchttpclient.util.HttpConstants.Methods.GET;
 
 /**
  * A Builder for Client Requests.
@@ -26,7 +28,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
  */
 public class ClientRequestBuilder {
 
-    final private RequestBuilder inner;
+    final private BoundRequestBuilder inner;
     final private RxHttpClient client;
 
     //mutable state to check conformity to policy
@@ -39,7 +41,7 @@ public class ClientRequestBuilder {
     private String requestSecret;
 
     ClientRequestBuilder(RxHttpClient client) {
-        inner = new RequestBuilder();
+        inner = new BoundRequestBuilder( client.inner(), GET, false);
         this.client = client;
     }
 

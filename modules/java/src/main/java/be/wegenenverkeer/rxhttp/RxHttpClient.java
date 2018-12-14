@@ -199,6 +199,10 @@ public class RxHttpClient {
         return new ClientRequestBuilder(this);
     }
 
+    AsyncHttpClient inner() {
+        return this.innerClient;
+    }
+
 
     private static class RestClientConfig {
 
