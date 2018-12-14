@@ -6,7 +6,7 @@ object Dependencies {
   val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.6.0"
   val rxjava = "io.reactivex" % "rxjava" % "1.2.4"
   val rxscala = "io.reactivex" %% "rxscala" % "0.26.5"
-  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.6"
+  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
   val commonsCodec =  "commons-codec" % "commons-codec" % "1.10"
   val json  = "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.2" % "provided"
 
