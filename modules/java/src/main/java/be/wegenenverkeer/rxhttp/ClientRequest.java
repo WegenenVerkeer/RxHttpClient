@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.netty.handler.codec.rtsp.RtspHeaderNames.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 
 /**
  * Wraps a {@link Request} into a more limited interface.
@@ -30,8 +30,11 @@ public class ClientRequest {
         return request.getMethod();
     }
 
+    //@deprecated "No longer supported
+    @Deprecated
     public long getContentLength() {
-        return request.getHeaders().getInt(CONTENT_LENGTH);
+        Integer length = request.getHeaders().getInt(CONTENT_LENGTH);
+        return length == null ? -1 : length;
     }
 
     public Map<String, List<String>> getHeaders() {
@@ -73,42 +76,9 @@ public class ClientRequest {
         return request.getFollowRedirect();
     }
 
-//    public Realm getRealm() {
-//        return request.getRealm();
-//    }
-//
-//    public ConnectionPoolPartitioning getConnectionPoolPartitioning() {
-//        return request.getConnectionPoolPartitioning();
-//    }
-//
-//    public InetAddress getInetAddress() {
-//        return request.getInetAddress();
-//    }
-//
-//    public List<Param> getFormParams() {
-//        return request.getFormParams();
-//    }
-//
-//    public List<Param> getQueryParams() {
-//        return request.getQueryParams();
-//    }
-//
-//    public BodyGenerator getBodyGenerator() {
-//        return request.getBodyGenerator();
-//    }
-//
-//    public ProxyServer getProxyServer() {
-//        return request.getProxyServer();
-//    }
-
     public long getRangeOffset() {
         return request.getRangeOffset();
     }
-
-//    public Uri getUri() {
-//        return request.getUri();
-//    }
-
 
     public byte[] getByteData() {
         return request.getByteData();
@@ -122,10 +92,6 @@ public class ClientRequest {
         return request.getStreamData();
     }
 
-//    public InetAddress getLocalAddress() {
-//        return request.getLocalAddress();
-//    }
-
     public String getUrl() {
         return request.getUrl();
     }
@@ -133,10 +99,6 @@ public class ClientRequest {
     public List<byte[]> getCompositeByteData() {
         return request.getCompositeByteData();
     }
-
-//    public List<Part> getParts() {
-//        return request.getParts();
-//    }
 
     //TODO -- method should return charset
     public String getBodyEncoding() {

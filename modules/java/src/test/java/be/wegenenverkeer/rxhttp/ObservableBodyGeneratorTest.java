@@ -1,6 +1,9 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.Body;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import org.asynchttpclient.request.body.Body;
 import org.junit.Test;
 import rx.Observable;
 import rx.schedulers.Schedulers;
@@ -11,6 +14,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.asynchttpclient.request.body.Body.BodyState.STOP;
 import static org.junit.Assert.assertEquals;
 
 public class ObservableBodyGeneratorTest {
@@ -33,14 +37,14 @@ public class ObservableBodyGeneratorTest {
         ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable);
 
         Body body = bodyGenerator.createBody();
-        final ByteBuffer chunkBuffer = ByteBuffer.allocate(chunkSize);
+        final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
 
         // should take 1 read to get through the srcArray
-        assertEquals(body.read(chunkBuffer), srcArraySize);
-        assertEquals("bytes read", srcArraySize, chunkBuffer.position());
+        assertEquals(body.transferTo(chunkBuffer), Body.BodyState.CONTINUE);
+        assertEquals("bytes read", srcArraySize, chunkBuffer.writerIndex());
         chunkBuffer.clear();
 
-        assertEquals("body at EOF", -1, body.read(chunkBuffer));
+        assertEquals("body at EOF", Body.BodyState.STOP, body.transferTo(chunkBuffer));
     }
 
     @Test
@@ -52,13 +56,13 @@ public class ObservableBodyGeneratorTest {
         ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable);
 
         Body body = bodyGenerator.createBody();
-        final ByteBuffer chunkBuffer = ByteBuffer.allocate(chunkSize);
+        final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
 
         int reads = 0;
         int bytesRead = 0;
-        while (body.read(chunkBuffer) != -1) {
+        while (body.transferTo(chunkBuffer) != STOP) {
             reads += 1;
-            bytesRead += chunkBuffer.position();
+            bytesRead += chunkBuffer.writerIndex();
             chunkBuffer.clear();
         }
         assertEquals("reads to drain generator", 4, reads);
@@ -73,13 +77,13 @@ public class ObservableBodyGeneratorTest {
         ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable);
 
         Body body = bodyGenerator.createBody();
-        final ByteBuffer chunkBuffer = ByteBuffer.allocate(chunkSize);
+        final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
 
         int reads = 0;
         int bytesRead = 0;
-        while (body.read(chunkBuffer) != -1) {
+        while (body.transferTo(chunkBuffer) != STOP) {
             reads += 1;
-            bytesRead += chunkBuffer.position();
+            bytesRead += chunkBuffer.writerIndex();
             chunkBuffer.clear();
         }
         assertEquals("reads to drain generator", 4, reads);
@@ -101,11 +105,11 @@ public class ObservableBodyGeneratorTest {
 
         ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable, 1);
         Body body = bodyGenerator.createBody();
-        final ByteBuffer chunkBuffer = ByteBuffer.allocate(chunkSize);
+        final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
 
         int bytesRead = 0;
-        while (body.read(chunkBuffer) != -1) {
-            bytesRead += chunkBuffer.position();
+        while (body.transferTo(chunkBuffer) != STOP) {
+            bytesRead += chunkBuffer.writerIndex();
             chunkBuffer.clear();
         }
         assertEquals("bytes read", size.get(), bytesRead);
@@ -126,11 +130,11 @@ public class ObservableBodyGeneratorTest {
 
         ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable, 2);
         Body body = bodyGenerator.createBody();
-        final ByteBuffer chunkBuffer = ByteBuffer.allocate(chunkSize);
+        final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
 
         int bytesRead = 0;
-        while (body.read(chunkBuffer) != -1) {
-            bytesRead += chunkBuffer.position();
+        while (body.transferTo(chunkBuffer) != STOP) {
+            bytesRead += chunkBuffer.writerIndex();
             chunkBuffer.clear();
             Thread.sleep(50);
         }

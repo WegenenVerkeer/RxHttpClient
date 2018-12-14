@@ -15,9 +15,7 @@ class RxHttpClient(val inner: JRxHttpClient) {
   import rx.lang.scala.JavaConversions.toScalaObservable
   import java.util.function.{ Function ⇒ JFunction}
 
-  private def toJavaFunction[A, B](f: A => B) : JFunction[A,B]= new JFunction[A, B] {
-    override def apply(a: A): B = f(a)
-  }
+  private def toJavaFunction[A, B](f: A => B) : JFunction[A,B]= (a: A) => f(a)
 
   private def fromJavaFuture[B](jfuture: CompletionStage[B]) : Future[B] = {
     val p = Promise[B]()
@@ -66,7 +64,7 @@ object ImplicitConversions {
 
 
   implicit def wrap( c : JRxHttpClient) : JavaClientWrapper = new JavaClientWrapper{
-    val inner = c
+    val inner : JRxHttpClient = c
   }
 
   implicit def unwrap(client: RxHttpClient) : JRxHttpClient = client.inner

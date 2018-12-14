@@ -90,7 +90,7 @@ public class ObservableBodyGenerator implements BodyGenerator {
         }
 
         @Override
-        public BodyState transferTo(ByteBuf buffer) throws IOException {
+        public BodyState transferTo(ByteBuf targetBuf) throws IOException {
             if (throwable != null) {
                 throw new IOException("observable onError was called", throwable);
             }
@@ -109,14 +109,14 @@ public class ObservableBodyGenerator implements BodyGenerator {
             // no more bytes available in nextPart
             if (nextPart.buffer.remaining() == 0) {
                 queue.remove();
-                transferTo(buffer);
+                transferTo(targetBuf);
             }
 
             // there is data available
-            int size = Math.min(nextPart.buffer.remaining(), CompatUtilities.remaining(buffer));
+            int size = Math.min(nextPart.buffer.remaining(), CompatUtilities.remaining(targetBuf));
             int position = nextPart.buffer.position();
             if (size > 0) {
-                CompatUtilities.put(buffer,nextPart.buffer.array(), 0, size);
+                CompatUtilities.put(targetBuf,nextPart.buffer.array(), 0, size);
                 nextPart.buffer.position(position + size);
             }
 
