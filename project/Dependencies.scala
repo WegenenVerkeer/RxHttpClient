@@ -3,7 +3,7 @@ import sbt._
 
 object Dependencies {
 
-  val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.6.0"
+  val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.8.1"
   val rxjava = "io.reactivex" % "rxjava" % "1.2.4"
   val rxscala = "io.reactivex" %% "rxscala" % "0.26.5"
   val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
