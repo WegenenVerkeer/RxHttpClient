@@ -18,8 +18,7 @@ public class TestAllAws4SuiteCases {
         for (Aws4TestCase tc : Fixture.testSuite) {
             String creq = signer.canonicalRequest(tc.getRequest());
             String expected = Fixture.getCanonicalRequest(tc.getName());
-            assertEquals("CanonicalRequest Error for " + tc.getName(), expected, creq);
-            test(false, tc, expected, creq);
+            test(true, tc, expected, creq);
         }
     }
 
@@ -49,7 +48,7 @@ public class TestAllAws4SuiteCases {
             System.out.println("Test case received: " + received);
             System.out.println("Test case expected: " + expected);
         }
-        assertEquals("CanonicalRequest Error for " + tc.getName(), expected, received);
+        assertEquals("Error for " + tc.getName(), expected, received);
     }
 
 }

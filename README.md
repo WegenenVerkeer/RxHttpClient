@@ -3,9 +3,31 @@
 [![Build Status](https://travis-ci.org/WegenenVerkeer/RxHttpClient.png?branch=develop)](https://travis-ci.org/WegenenVerkeer/RxHttpClient)
 
 
-This HTTP Client wraps the excellent [AsyncHttpClient](https://github.com/AsyncHttpClient/async-http-client) so that
+This HTTP Client wraps the excellent [AsyncHttpClient](https://github.com/AsyncHttpClient/async-http-client) (AHC) so that
 Observables are returned, and a number of best practices in RESTful integration are enforced.
 
+# Upgrade to AHC 2
+
+This version of RxHttpClient uses AHC 2.8.x. This implies a number of minor API changes w.r.t to the 0.x versions. 
+
+API Changes:
+
+ - The methods in ObservableBodyGenerators no longer declare that the throw `Exception`s
+ - `ServerResponse#getResponseBody(String)` replaced by `ServerResponse#getResponseBody(String)`
+ 
+The following methods have been removed:
+
+ - `RxHttpClient.Builder#setExecutorService()`. Replaced by `RxHttpClient.Builder#setThreadFactory()`
+ - `RxHttpClient.Builder#setHostnameVerifier()` 
+ - `RxHttpClient.Builder#setUseRelativeURIsWithConnectProxies()`
+
+
+The following methods have been deprecated:
+
+ - `ClientRequest#getContentLength()`
+ - `RxHttpClient.Builder#setAllowPoolingConnections(boolean)`: use `setKeepAlive()`
+ - `RxHttpClient.Builder#setAcceptAnyCertificate(boolean)`: use `RxHttpClient.Builder#setUseInsecureTrustManager(boolean)`
+ - `RxHttpClient.Builder setDisableUrlEncodingForBoundedRequests(boolean)`: use ` RxHttpClient.Builder#setDisableUrlEncodingForBoundRequests(boolean)`
 
 # User Guide
 

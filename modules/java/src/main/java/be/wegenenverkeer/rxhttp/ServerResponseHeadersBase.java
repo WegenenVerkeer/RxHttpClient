@@ -1,25 +1,21 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.FluentCaseInsensitiveStringsMap;
-import com.ning.http.client.HttpResponseHeaders;
+import io.netty.handler.codec.http.HttpHeaders;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Base implementation of the ServerResponseHeaders interface. Only used internally.
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 class ServerResponseHeadersBase implements ServerResponseHeaders {
 
-    FluentCaseInsensitiveStringsMap headers = new FluentCaseInsensitiveStringsMap();
+    Map<String, List<String>> headers = new HashMap<>();
 
-    public ServerResponseHeadersBase(HttpResponseHeaders rh) {
-        if (rh.getHeaders() != null) {
-            headers = rh.getHeaders();
+    public ServerResponseHeadersBase(HttpHeaders rh) {
+        if (rh != null) {
+            headers = CompatUtilities.headersToMap(rh);
         }
     }
 

@@ -5,6 +5,7 @@ package be.wegenenverkeer.rxhttp;
  *
  * Created by Karel Maesen, Geovise BVBA on 19/12/14.
  */
+//TODO -- this can be deprecated and replaced by org.asynchttpclient.util.HttpConstants.ResponseStatusCodes
 public class HTTPStatusCode {
 
     final static  public int  SwitchingProtocols = 101;

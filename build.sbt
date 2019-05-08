@@ -23,7 +23,7 @@ val scalaModuleName = Name + "-scala"
 lazy val scalaModule =(project in file("modules/scala")). settings(
   name := scalaModuleName,
   buildSettings(scalaModuleName),
-  crossScalaVersions := Seq("2.11.8", "2.12.1"),
+  //crossScalaVersions := Seq("2.12.8"),
   libraryDependencies ++= scalaDependencies
 ) dependsOn javaModule
 

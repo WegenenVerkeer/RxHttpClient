@@ -135,25 +135,25 @@ public class AwsSignature4Signer implements RequestSigner {
     }
 
     private String signedHeaders(Map<String, List<String>> headers) {
+        List<String> keys = collectSorted(headers);
+        return join(keys, ";");
+    }
+
+    private List<String> collectSorted(Map<String, List<String>> headers) {
         List<String> keys = headers
                 .keySet()
                 .stream()
                 .map(s -> s.toLowerCase(Locale.ENGLISH))
                 .collect(Collectors.toList());
         Collections.sort(keys);
-        return join(keys, ";");
+        return keys;
     }
 
     private String canonicalHeaders(Map<String, List<String>> headers) {
         if (headers == null || headers.isEmpty()) {
             return "";
         }
-        List<String> keys = headers
-                .keySet()
-                .stream()
-                .map(s -> s.toLowerCase(Locale.ENGLISH))
-                .collect(Collectors.toList());
-        Collections.sort(keys);
+        List<String> keys = collectSorted(headers);
         List<String> reqElems = new ArrayList<>();
 
         for (String key : keys) {
@@ -171,12 +171,7 @@ public class AwsSignature4Signer implements RequestSigner {
         if (headers == null || headers.isEmpty()) {
             return "";
         }
-        List<String> keys = headers
-                .keySet()
-                .stream()
-                .map(s -> s.toLowerCase(Locale.ENGLISH))
-                .collect(Collectors.toList());
-        Collections.sort(keys);
+        List<String> keys = collectSorted(headers);
         return join(keys, ";");
     }
 

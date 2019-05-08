@@ -1,7 +1,8 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.Body;
-import com.ning.http.client.BodyGenerator;
+import io.netty.buffer.ByteBuf;
+import org.asynchttpclient.request.body.Body;
+import org.asynchttpclient.request.body.generator.BodyGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -43,7 +44,7 @@ public class ObservableBodyGenerator implements BodyGenerator {
     }
 
     @Override
-    public Body createBody() throws IOException {
+    public Body createBody() {
         subscription = this.observable.subscribe(new Subscriber<byte[]>() {
 
             @Override
@@ -89,7 +90,7 @@ public class ObservableBodyGenerator implements BodyGenerator {
         }
 
         @Override
-        public long read(ByteBuffer buffer) throws IOException {
+        public BodyState transferTo(ByteBuf targetBuf) throws IOException {
             if (throwable != null) {
                 throw new IOException("observable onError was called", throwable);
             }
@@ -98,24 +99,24 @@ public class ObservableBodyGenerator implements BodyGenerator {
 
             //no data available
             if (nextPart == null) {
-                return 0;
+                return BodyState.SUSPEND;
             }
 
             if (nextPart.isLast) {
-                return -1;
+                return BodyState.STOP;
             }
 
             // no more bytes available in nextPart
             if (nextPart.buffer.remaining() == 0) {
                 queue.remove();
-                read(buffer);
+                transferTo(targetBuf);
             }
 
             // there is data available
-            int size = Math.min(nextPart.buffer.remaining(), buffer.remaining());
+            int size = Math.min(nextPart.buffer.remaining(), targetBuf.writableBytes());
             int position = nextPart.buffer.position();
             if (size > 0) {
-                buffer.put(nextPart.buffer.array(), 0, size);
+                targetBuf.writeBytes(nextPart.buffer.array(), 0, size);
                 nextPart.buffer.position(position + size);
             }
 
@@ -128,11 +129,11 @@ public class ObservableBodyGenerator implements BodyGenerator {
                 System.out.println("Oops, returning -1");
             }
 
-            return size;
+            return BodyState.CONTINUE;
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             ObservableBodyGenerator.this.subscription.unsubscribe();
         }
     }
