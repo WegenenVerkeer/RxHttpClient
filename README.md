@@ -8,7 +8,7 @@ Observables are returned, and a number of best practices in RESTful integration 
 
 # Upgrade to AHC 2
 
-This version of RxHttpClient uses AHC 2.6. This implies a number of minor API changes w.r.t to the 0.x versions. 
+This version of RxHttpClient uses AHC 2.8.x. This implies a number of minor API changes w.r.t to the 0.x versions. 
 
 API Changes:
 
