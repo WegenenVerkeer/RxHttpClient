@@ -1,16 +1,16 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.AsyncHandler;
-import com.ning.http.client.HttpResponseBodyPart;
-import com.ning.http.client.HttpResponseHeaders;
-import com.ning.http.client.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpHeaders;
+import org.asynchttpclient.AsyncHandler;
+import org.asynchttpclient.HttpResponseBodyPart;
+import org.asynchttpclient.HttpResponseStatus;
 import rx.subjects.BehaviorSubject;
 
 import java.util.Optional;
 
 /**
- *  A {@link AsyncHandler} that pushes received items to a specified {@link BehaviorSubject}
- *
+ * A {@link AsyncHandler} that pushes received items to a specified {@link BehaviorSubject}
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
@@ -20,7 +20,7 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
     /**
      * Constructs an instance.
      *
-     * @param subject
+     * @param subject BehaviorSubject wrapped by this instance
      */
     AsyncHandlerWrapper(BehaviorSubject<ServerResponseElement> subject) {
         this.subject = subject;
@@ -41,20 +41,19 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      * Invoked as soon as some response body part are received. Could be invoked many times.
      *
      * @param bodyPart response's body part.
-     * @return a {@link com.ning.http.client.AsyncHandler.STATE} telling to CONTINUE or ABORT the current processing.
-     * @throws Exception if something wrong happens
+     * @return a {@link org.asynchttpclient.AsyncHandler.State} telling to CONTINUE or ABORT the current processing.
      */
     @Override
-    public STATE onBodyPartReceived(HttpResponseBodyPart bodyPart) throws Exception {
+    public State onBodyPartReceived(HttpResponseBodyPart bodyPart) {
         if (!subject.hasObservers()) {
-            bodyPart.markUnderlyingConnectionAsToBeClosed();
+            //bodyPart.markUnderlyingConnectionAsToBeClosed();
             onCompleted(); //send the uncompleted message
-            return STATE.ABORT;
+            return State.ABORT;
         }
         subject.onNext(
-                (ServerResponseBodyPart)( bodyPart::getBodyPartBytes )
-            );
-        return STATE.CONTINUE;
+                (ServerResponseBodyPart) (bodyPart::getBodyPartBytes)
+        );
+        return State.CONTINUE;
     }
 
     //we don't check for hasObservers in the onStatusReceived() and onHeadersReceived(). This guarantees that
@@ -65,11 +64,10 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      * Invoked as soon as the HTTP status line has been received
      *
      * @param responseStatus the status code and test of the response
-     * @return a {@link com.ning.http.client.AsyncHandler.STATE} telling to CONTINUE or ABORT the current processing.
-     * @throws Exception if something wrong happens
+     * @return a {@link org.asynchttpclient.AsyncHandler.State} telling to CONTINUE or ABORT the current processing.
      */
     @Override
-    public STATE onStatusReceived(HttpResponseStatus responseStatus) throws Exception {
+    public State onStatusReceived(HttpResponseStatus responseStatus) {
         final int statuscode = responseStatus.getStatusCode();
 
         if (statuscode >= 400 && statuscode < 500) {
@@ -89,7 +87,7 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
                 return Optional.ofNullable(responseStatus.getStatusText());
             }
         });
-        return STATE.CONTINUE;
+        return State.CONTINUE;
     }
 
     /**
@@ -97,13 +95,12 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      * sent trailing headers.
      *
      * @param headers the HTTP headers.
-     * @return a {@link com.ning.http.client.AsyncHandler.STATE} telling to CONTINUE or ABORT the current processing.
-     * @throws Exception if something wrong happens
+     * @return a {@link org.asynchttpclient.AsyncHandler.State} telling to CONTINUE or ABORT the current processing.
      */
     @Override
-    public STATE onHeadersReceived(HttpResponseHeaders headers) throws Exception {
+    public State onHeadersReceived(HttpHeaders headers) {
         subject.onNext(new ServerResponseHeadersBase(headers));
-        return STATE.CONTINUE;
+        return State.CONTINUE;
     }
 
     /**
@@ -113,10 +110,9 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      * Gets always invoked as last callback method.
      *
      * @return T Value that will be returned by the associated {@link java.util.concurrent.Future}
-     * @throws Exception if something wrong happens
      */
     @Override
-    public Boolean onCompleted() throws Exception {
+    public Boolean onCompleted() {
         subject.onCompleted();
         return true;
     }

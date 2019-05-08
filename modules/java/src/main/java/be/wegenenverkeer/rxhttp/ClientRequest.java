@@ -1,7 +1,8 @@
 package be.wegenenverkeer.rxhttp;
 
-import com.ning.http.client.Param;
-import com.ning.http.client.Request;
+import io.netty.handler.codec.http.HttpHeaders;
+import org.asynchttpclient.Param;
+import org.asynchttpclient.Request;
 
 import java.io.File;
 import java.io.InputStream;
@@ -10,9 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+
 /**
  * Wraps a {@link Request} into a more limited interface.
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
 public class ClientRequest {
@@ -27,21 +30,25 @@ public class ClientRequest {
         return request.getMethod();
     }
 
+    //@deprecated "No longer supported
+    @Deprecated
     public long getContentLength() {
-        return request.getContentLength();
+        Integer length = request.getHeaders().getInt(CONTENT_LENGTH);
+        return length == null ? -1 : length;
     }
 
     public Map<String, List<String>> getHeaders() {
-        return request.getHeaders();
+        HttpHeaders headers = request.getHeaders();
+        return CompatUtilities.headersToMap(headers);
     }
 
-    public Map<String, List<String>> getQueryParams(){
+    public Map<String, List<String>> getQueryParams() {
         List<Param> queryParams = request.getQueryParams();
         Map<String, List<String>> result = new HashMap<>();
         for (Param p : queryParams) {
             String name = p.getName();
             String val = p.getValue();
-            if(result.get(name) == null) {
+            if (result.get(name) == null) {
                 List<String> vals = new ArrayList<>();
                 vals.add(val);
                 result.put(name, vals);
@@ -69,42 +76,9 @@ public class ClientRequest {
         return request.getFollowRedirect();
     }
 
-//    public Realm getRealm() {
-//        return request.getRealm();
-//    }
-//
-//    public ConnectionPoolPartitioning getConnectionPoolPartitioning() {
-//        return request.getConnectionPoolPartitioning();
-//    }
-//
-//    public InetAddress getInetAddress() {
-//        return request.getInetAddress();
-//    }
-//
-//    public List<Param> getFormParams() {
-//        return request.getFormParams();
-//    }
-//
-//    public List<Param> getQueryParams() {
-//        return request.getQueryParams();
-//    }
-//
-//    public BodyGenerator getBodyGenerator() {
-//        return request.getBodyGenerator();
-//    }
-//
-//    public ProxyServer getProxyServer() {
-//        return request.getProxyServer();
-//    }
-
     public long getRangeOffset() {
         return request.getRangeOffset();
     }
-
-//    public Uri getUri() {
-//        return request.getUri();
-//    }
-
 
     public byte[] getByteData() {
         return request.getByteData();
@@ -118,10 +92,6 @@ public class ClientRequest {
         return request.getStreamData();
     }
 
-//    public InetAddress getLocalAddress() {
-//        return request.getLocalAddress();
-//    }
-
     public String getUrl() {
         return request.getUrl();
     }
@@ -130,12 +100,9 @@ public class ClientRequest {
         return request.getCompositeByteData();
     }
 
-//    public List<Part> getParts() {
-//        return request.getParts();
-//    }
-
+    //TODO -- method should return charset
     public String getBodyEncoding() {
-        return request.getBodyEncoding();
+        return request.getCharset().name();
     }
 
     Request unwrap() {
