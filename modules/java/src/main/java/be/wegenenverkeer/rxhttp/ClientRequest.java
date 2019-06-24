@@ -117,7 +117,7 @@ public class ClientRequest {
     public void addHeader(String header, String value) {
         List<String> hv = new ArrayList<>();
         hv.add(value);
-        this.getHeaders().put(header, hv);
+        this.request.getHeaders().add(header,value);
     }
 
 }
