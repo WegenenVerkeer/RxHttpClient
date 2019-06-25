@@ -10,7 +10,7 @@ object BuildSettings {
 
   val Organization = "be.wegenenverkeer"
 
-  val Version = "1.0.0"
+  val Version = "1.1.0"
 
   val ScalaVersion = "2.12.8"
   val ScalaBuildOptions = Seq("-unchecked", "-deprecation", "-feature",
@@ -70,7 +70,7 @@ object BuildSettings {
   lazy val extraJavaSettings = Seq(
     crossPaths := false,
     autoScalaLibrary := false,
-    javacOptions ++= Seq("-Xlint:deprecation"),
+    //javacOptions ++= Seq("-Xlint:deprecation"),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
   )
 
