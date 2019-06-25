@@ -1,13 +1,11 @@
 package be.wegenenverkeer.rxhttp;
 
-import be.wegenenverkeer.rxhttp.aws.AwsCredentialsProvider;
-import be.wegenenverkeer.rxhttp.aws.AwsRegion;
-import be.wegenenverkeer.rxhttp.aws.AwsService;
-import be.wegenenverkeer.rxhttp.aws.AwsServiceEndPoint;
-import be.wegenenverkeer.rxhttp.aws.AwsSignature4Signer;
-
+import be.wegenenverkeer.rxhttp.aws.*;
 import io.netty.handler.ssl.SslContext;
-import org.asynchttpclient.*;
+import org.asynchttpclient.AsyncCompletionHandler;
+import org.asynchttpclient.AsyncHttpClient;
+import org.asynchttpclient.DefaultAsyncHttpClientConfig;
+import org.asynchttpclient.Response;
 import org.asynchttpclient.filter.RequestFilter;
 import org.asynchttpclient.filter.ThrottleRequestFilter;
 import org.slf4j.Logger;
@@ -19,18 +17,10 @@ import rx.subjects.BehaviorSubject;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Function;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
 
 import static be.wegenenverkeer.rxhttp.CompleteResponseHandler.withCompleteResponse;
 import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
@@ -47,18 +37,20 @@ public class RxHttpClient {
     final private AsyncHttpClient innerClient;
     final private RestClientConfig config;
     final private List<RequestSigner> requestSigners;
+    final private ClientRequestLogFormatter logFormatter;
 
-    protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config, RequestSigner... requestSigners) {
+    protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config, ClientRequestLogFormatter logFmt, RequestSigner... requestSigners) {
         this.innerClient = innerClient;
         this.config = config;
         this.requestSigners = Collections.unmodifiableList(Arrays.asList(requestSigners));
+        this.logFormatter = logFmt;
     }
 
     /**
      * * Executes a request and returns an Observable for the complete response.
      */
     public <F> CompletableFuture<F> execute(ClientRequest request, Function<ServerResponse, F> transformer) {
-        logger.info("Sending Request: " + request.toString());
+        logger.info("Sending Request: " + toLogMessage(request));
         //Note: we don't use Observable.toBlocking().toFuture()
         //because we need a CompletableFuture so that interop with Scala is possible
         final CompletableFuture<F> future = new CompletableFuture<>();
@@ -105,7 +97,7 @@ public class RxHttpClient {
      */
     public <F> Observable<F> executeToCompletion(ClientRequest request, Function<ServerResponse, F> transformer) {
         return Observable.defer(() -> {
-            logger.info("Sending Request: " + request.toString());
+            logger.info("Sending Request: " + toLogMessage(request));
             AsyncSubject<F> subject = AsyncSubject.create();
             innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, transformer));
             return subject;
@@ -199,6 +191,11 @@ public class RxHttpClient {
         return new ClientRequestBuilder(this);
     }
 
+    protected String toLogMessage(ClientRequest request) {
+        return this.logFormatter.toLogMessage(request);
+    }
+
+
     AsyncHttpClient inner() {
         return this.innerClient;
     }
@@ -277,6 +274,8 @@ public class RxHttpClient {
         private AwsServiceEndPoint awsServiceEndPoint;
         private AwsCredentialsProvider awsCredentialsProvider;
         private List<RequestSigner> requestSigners = new LinkedList<>();
+        private List<String> headersToLog = new ArrayList<>();
+        private ArrayList<String> formParmsToLog = new ArrayList<>();
 
         public RxHttpClient build() {
             addRestClientConfigsToConfigBuilder();
@@ -299,7 +298,9 @@ public class RxHttpClient {
                 requestSigners.add(new AwsSignature4Signer(this.awsServiceEndPoint, this.awsCredentialsProvider));
             }
 
-            return new RxHttpClient(innerClient, rcConfig, requestSigners.toArray(new RequestSigner[0]));
+            ClientRequestLogFormatter logFmt = new DefaultClientRequestLogFormatter(headersToLog, formParmsToLog);
+
+            return new RxHttpClient(innerClient, rcConfig, logFmt, requestSigners.toArray(new RequestSigner[0]));
         }
 
         /**
@@ -420,6 +421,7 @@ public class RxHttpClient {
          * @param allowPoolingConnections true if connection can be pooled by a ChannelPool
          * @return a {@link RxHttpClient.Builder}
          */
+        @Deprecated
         public RxHttpClient.Builder setAllowPoolingConnections(boolean allowPoolingConnections) {
             configBuilder.setKeepAlive(allowPoolingConnections);
             return this;
@@ -750,6 +752,7 @@ public class RxHttpClient {
          * @param disableUrlEncodingForBoundedRequests disables the url encoding if set to true
          * @return this Builder
          */
+        @Deprecated
         public RxHttpClient.Builder setDisableUrlEncodingForBoundedRequests(boolean disableUrlEncodingForBoundedRequests) {
             configBuilder.setDisableUrlEncodingForBoundRequests(disableUrlEncodingForBoundedRequests);
             return this;
@@ -855,6 +858,17 @@ public class RxHttpClient {
             this.awsCredentialsProvider = provider;
             return this;
         }
+
+        public Builder logHeaders(List<String> headerNames) {
+            this.headersToLog = new ArrayList<>(headerNames);
+            return this;
+        }
+
+        public Builder logFormParams(List<String> formParameterNames) {
+            this.formParmsToLog = new ArrayList<>(formParameterNames);
+            return this;
+        }
+
     }
 
     static private class BuildValidation {

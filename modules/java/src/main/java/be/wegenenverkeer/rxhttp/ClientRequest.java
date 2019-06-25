@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 
@@ -117,7 +118,10 @@ public class ClientRequest {
     public void addHeader(String header, String value) {
         List<String> hv = new ArrayList<>();
         hv.add(value);
-        this.request.getHeaders().add(header,value);
+        this.request.getHeaders().add(header, value);
     }
 
+
+
 }
+
