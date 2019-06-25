@@ -63,7 +63,7 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
                     .setUrlRelativetoBase(contactUrl).build();
             return client
                     .executeToCompletion(followUp, ServerResponse::getResponseBody)
-                    .finallyDo(() -> LOGGER.info("ContactUrl " + contactUrl + " retrieved"));
+                    .doAfterTerminate(() -> LOGGER.info("ContactUrl " + contactUrl + " retrieved"));
         };
 
         LOGGER.info("Creating Observable...");

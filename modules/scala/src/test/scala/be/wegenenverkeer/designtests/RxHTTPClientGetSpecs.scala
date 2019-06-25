@@ -54,7 +54,7 @@ class RxHTTPClientGetSpecs extends Specification {
       }
 
 
-      "return scala Future with execute" in new UsingMockServer with NoTimeConversions {
+      "return scala Future with execute" in new UsingMockServer {
 
 
         import scala.concurrent.duration._
@@ -82,7 +82,7 @@ class RxHTTPClientGetSpecs extends Specification {
         response must_== expectBody
       }
 
-      "return scala Future with executeCompletely" in new UsingMockServer with NoTimeConversions {
+      "return scala Future with executeCompletely" in new UsingMockServer {
 
 
         import scala.concurrent.duration._

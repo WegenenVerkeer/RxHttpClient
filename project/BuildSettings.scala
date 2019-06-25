@@ -70,6 +70,7 @@ object BuildSettings {
   lazy val extraJavaSettings = Seq(
     crossPaths := false,
     autoScalaLibrary := false,
+    javacOptions ++= Seq("-Xlint:deprecation"),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
   )
 
