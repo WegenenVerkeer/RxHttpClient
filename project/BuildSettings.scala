@@ -10,7 +10,7 @@ object BuildSettings {
 
   val Organization = "be.wegenenverkeer"
 
-  val Version = "1.1.0"
+  val Version = "1.2.0-SNAPSHOT"
 
   val ScalaVersion = "2.12.8"
   val ScalaBuildOptions = Seq("-unchecked", "-deprecation", "-feature",

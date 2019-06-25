@@ -1,10 +1,9 @@
 language: scala
 sudo: false
 scala:
-- 2.12.1
+- 2.12.2
 script: sbt clean test
-jdk:
-- oraclejdk8
+
 notifications:
   email:
     recipients:
