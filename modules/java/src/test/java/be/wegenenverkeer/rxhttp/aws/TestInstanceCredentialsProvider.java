@@ -5,7 +5,7 @@ import org.junit.Test;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 07/02/17.

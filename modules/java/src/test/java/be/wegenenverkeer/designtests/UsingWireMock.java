@@ -55,6 +55,7 @@ abstract public class UsingWireMock {
         WireMock.resetToDefault();
     }
 
+    @SuppressWarnings("unchecked")
     public <V> List<V> items(V... v) {
         return Arrays.asList(v);
     }

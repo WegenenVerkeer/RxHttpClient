@@ -1,6 +1,7 @@
 package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.rxhttp.*;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import rx.Observable;
@@ -8,10 +9,13 @@ import rx.observers.TestSubscriber;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests that demonstrate processing a long and slow chunked response.
