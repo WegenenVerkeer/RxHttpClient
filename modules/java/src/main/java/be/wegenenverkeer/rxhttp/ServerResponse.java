@@ -129,6 +129,16 @@ public class ServerResponse implements ServerResponseStatus, ServerResponseHeade
         return getResponseBodyAsBytes();
     }
 
+    @Override
+    public boolean isLast() {
+        return true;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return false;
+    }
+
 
     @Override
     public <T> T match(

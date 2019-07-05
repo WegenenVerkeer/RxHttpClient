@@ -55,14 +55,13 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
             onCompleted(); //send the uncompleted message
             return State.ABORT;
         }
-        trace(String.format("onNext: '%s'", toUtf8String(bodyPart)));
-        subject.onNext(
-                (ServerResponseBodyPart) (bodyPart::getBodyPartBytes)
-        );
+        ServerResponseBodyPart sbp = new ServerResponseBodyPartImpl(bodyPart.getBodyPartBytes(), bodyPart.isLast());
+        trace(String.format("onNext: '%s' %s", toUtf8String(sbp), sbp.isLast() ? "(last)" : ""));
+        subject.onNext(sbp);
         return State.CONTINUE;
     }
 
-    private String toUtf8String(HttpResponseBodyPart bodyPart) {
+    private String toUtf8String(ServerResponseBodyPart bodyPart) {
         try {
             return new String(bodyPart.getBodyPartBytes(), "UTF8");
         } catch (UnsupportedEncodingException e) {
@@ -113,7 +112,7 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      */
     @Override
     public State onHeadersReceived(HttpHeaders headers) {
-        subject.onNext(new ServerResponseHeadersBase(headers));
+        subject.onNext(new ServerResponseHeadersImpl(headers));
         return State.CONTINUE;
     }
 

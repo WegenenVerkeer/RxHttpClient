@@ -27,7 +27,7 @@ public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
     final private MutableResponseProcessor processor;
 
     /**
-     * Constructs an instance
+     * Constructs an instance that transforms each chunk into a value of T
      *
      * @param transformPart the function that transforms the bytes of each response part into an object of type {@code T}
      */

@@ -8,6 +8,7 @@ import java.util.function.Function;
 /**
  * Created by Karel Maesen, Geovise BVBA on 2019-07-05.
  */
+@Deprecated
 public class ChunkProcessor {
 
         private final String separator;
