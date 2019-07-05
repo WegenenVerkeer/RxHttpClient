@@ -28,7 +28,7 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
     public void demonstrateComposableObservable() throws InterruptedException {
         //set up stubs
         String expectBody = "{ 'contacts': ['contacts/1','contacts/2','contacts/3', 'contacts/4', 'contacts/5', 'contacts/6', 'contacts/7'] }";
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
                 .willReturn(aResponse().withFixedDelay(10)

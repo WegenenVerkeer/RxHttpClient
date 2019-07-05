@@ -22,7 +22,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock{
     public void GETHappyPath() throws InterruptedException {
         //set up stub
         String expectBody = "{ 'contacts': [1,2,3] }";
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
                 .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT / 3)

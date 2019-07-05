@@ -3,6 +3,7 @@ package be.wegenenverkeer.designtests;
 import be.wegenenverkeer.rxhttp.RxHttpClient;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.Options;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -11,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 19/12/14.
@@ -32,7 +33,7 @@ abstract public class UsingWireMock {
 
     @BeforeClass
     public static void setUpAndStartServer() {
-        server = new WireMockServer(wireMockConfig().port(port));
+        server = new WireMockServer(options().port(port).useChunkedTransferEncoding(Options.ChunkedEncodingPolicy.BODY_FILE));
         server.start();
         configureFor("localhost", port);
 

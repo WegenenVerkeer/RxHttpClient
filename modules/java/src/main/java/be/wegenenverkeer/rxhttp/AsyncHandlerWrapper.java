@@ -4,8 +4,11 @@ import io.netty.handler.codec.http.HttpHeaders;
 import org.asynchttpclient.AsyncHandler;
 import org.asynchttpclient.HttpResponseBodyPart;
 import org.asynchttpclient.HttpResponseStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.subjects.BehaviorSubject;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Optional;
 
 /**
@@ -15,6 +18,7 @@ import java.util.Optional;
  */
 class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
 
+    final private static Logger logger = LoggerFactory.getLogger(AsyncHandlerWrapper.class);
     final private BehaviorSubject<ServerResponseElement> subject;
 
     /**
@@ -46,14 +50,24 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
     @Override
     public State onBodyPartReceived(HttpResponseBodyPart bodyPart) {
         if (!subject.hasObservers()) {
+            trace("No observers: Aborting.");
             //bodyPart.markUnderlyingConnectionAsToBeClosed();
             onCompleted(); //send the uncompleted message
             return State.ABORT;
         }
+        trace(String.format("onNext: '%s'", toUtf8String(bodyPart)));
         subject.onNext(
                 (ServerResponseBodyPart) (bodyPart::getBodyPartBytes)
         );
         return State.CONTINUE;
+    }
+
+    private String toUtf8String(HttpResponseBodyPart bodyPart) {
+        try {
+            return new String(bodyPart.getBodyPartBytes(), "UTF8");
+        } catch (UnsupportedEncodingException e) {
+           return "<<< binary body part >>>";
+        }
     }
 
     //we don't check for hasObservers in the onStatusReceived() and onHeadersReceived(). This guarantees that
@@ -113,7 +127,14 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      */
     @Override
     public Boolean onCompleted() {
+        trace("Completed");
         subject.onCompleted();
         return true;
+    }
+
+    private static void trace(String msg) {
+        if (logger.isTraceEnabled()) {
+            logger.trace(msg);
+        }
     }
 }
