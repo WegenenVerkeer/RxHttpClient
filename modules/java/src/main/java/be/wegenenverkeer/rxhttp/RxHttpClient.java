@@ -17,6 +17,7 @@ import rx.subjects.BehaviorSubject;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadFactory;
@@ -33,6 +34,7 @@ import static org.asynchttpclient.Dsl.asyncHttpClient;
 public class RxHttpClient {
 
     final private static Logger logger = LoggerFactory.getLogger(RxHttpClient.class);
+    final private static Charset UTF8 = Charset.forName("UTF8");
 
     final private AsyncHttpClient innerClient;
     final private RestClientConfig config;
@@ -123,6 +125,52 @@ public class RxHttpClient {
     }
 
     /**
+     * Returns a "cold" Observable for a stream of messages.
+     * <p>
+     * All <code>ServerResponseElement</code>s are filtered out, <code>ResponseBodyPart</code>s are turned into (UTF8) <code>String</code>s,
+     * and the chunks are combined and split at the specified separator characters.
+     * <p>
+     * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
+     * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
+     *
+     * @param request the request to send
+     * @param separator the separator
+     * @return a cold observable of messages (UTF8 Strings)
+     * @see Observable#defer
+     */
+    public Observable<String> executeAndDechunk(ClientRequest request, String separator) {
+        return Observable.defer(() -> {
+            BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
+            innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
+            return subject;
+        }).lift(new Dechunker(separator, false, UTF8));
+    }
+
+    /**
+     * Returns a "cold" Observable for a stream of messages.
+     * <p>
+     * All <code>ServerResponseElement</code>s are filtered out, <code>ResponseBodyPart</code>s are turned into <code>String</code>s in
+     * the specified charset, and the chunks are combined and split at the separator characters.
+     * <p>
+     * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
+     * and the response elements returned as a new Observable. So for each subscriber, a separate HTTP request will be made.
+     *
+     * @param request the request to send
+     * @param separator the separator
+     * @param charset the character set of the messages
+     * @return a cold observable of messages (Strings in the specified Charset)
+     * @see Observable#defer
+     */
+    public Observable<String> executeAndDechunk(ClientRequest request, String separator, Charset charset) {
+        return Observable.defer(() -> {
+            BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
+            innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
+            return subject;
+        }).lift(new Dechunker(separator, false, charset));
+    }
+
+
+    /**
      * Returns a "cold" Observable for a stream of {@code T}.
      * <p>
      * The returned Observable is Cold, i.e. on each subscription a new HTTP request is made
@@ -167,7 +215,7 @@ public class RxHttpClient {
         return config.getAccept();
     }
 
-    public List<RequestSigner> getRequestSigners(){
+    public List<RequestSigner> getRequestSigners() {
         return requestSigners;
     }
 
@@ -307,7 +355,7 @@ public class RxHttpClient {
          * Perform additional configBuilder build steps based on rcConfig settings
          */
         private void addRestClientConfigsToConfigBuilder() {
-            if(rcConfig.getMaxConnections() > 0) {
+            if (rcConfig.getMaxConnections() > 0) {
                 configBuilder.setMaxConnections(rcConfig.getMaxConnections());
             }
             if (rcConfig.getMaxConnections() > 0 && rcConfig.isThrottling() && rcConfig.getThrottlingMaxWait() > 0) {
@@ -416,10 +464,9 @@ public class RxHttpClient {
         /**
          * Set true if connection can be pooled by a ChannelPool. Default is true.
          *
-         *  @deprecated Use setKeepAlive(boolean) instead
-         *
          * @param allowPoolingConnections true if connection can be pooled by a ChannelPool
          * @return a {@link RxHttpClient.Builder}
+         * @deprecated Use setKeepAlive(boolean) instead
          */
         @Deprecated
         public RxHttpClient.Builder setAllowPoolingConnections(boolean allowPoolingConnections) {
@@ -450,6 +497,7 @@ public class RxHttpClient {
             rcConfig.setThrottlingMaxWait(maxWait);
             return this;
         }
+
         /**
          * Set the maximum time in millisecond an {@link org.asynchttpclient.AsyncHttpClient} can wait when connecting to a remote host
          *
@@ -476,8 +524,9 @@ public class RxHttpClient {
          * Set the {@link java.util.concurrent.ExecutorService} an {@link org.asynchttpclient.AsyncHttpClient} uses for handling
          * asynchronous response.
          * <p>
+         *
          * @param threadFactory the {@code threadFactory} an {@link org.asynchttpclient.AsyncHttpClient} use for handling
-         *                              asynchronous response.
+         *                      asynchronous response.
          * @return a {@link RxHttpClient.Builder}
          */
         public RxHttpClient.Builder setThreadFactory(ThreadFactory threadFactory) {
@@ -689,7 +738,6 @@ public class RxHttpClient {
          * <p>
          * <p> Default is -1 (no TTL set)</p>
          *
-         *
          * @param connectionTTL the maximum time in millisecond connection can be added to the pool for further reuse
          * @return a {@link RxHttpClient.Builder}
          */
@@ -721,7 +769,6 @@ public class RxHttpClient {
         }
 
 
-
 //        /**
 //         * Add an {@link org.asynchttpclient.filter.RequestFilter} that will be invoked before {@link org.asynchttpclient.AsyncHttpClient#executeObservably(org.asynchttpclient.Request)}
 //         *
@@ -748,9 +795,9 @@ public class RxHttpClient {
         /**
          * Disable automatic url escaping
          *
-         * @deprecated Use setDisableUrlEncodingForBoundRequests
          * @param disableUrlEncodingForBoundedRequests disables the url encoding if set to true
          * @return this Builder
+         * @deprecated Use setDisableUrlEncodingForBoundRequests
          */
         @Deprecated
         public RxHttpClient.Builder setDisableUrlEncodingForBoundedRequests(boolean disableUrlEncodingForBoundedRequests) {

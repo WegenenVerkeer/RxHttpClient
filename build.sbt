@@ -49,6 +49,7 @@ val publishSettings = Seq(
 lazy val extraJavaSettings = Seq(
   crossPaths := false,
   autoScalaLibrary := false,
+  Test / parallelExecution := false,
   //    javacOptions ++= Seq("-Xlint:deprecation"),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
 )

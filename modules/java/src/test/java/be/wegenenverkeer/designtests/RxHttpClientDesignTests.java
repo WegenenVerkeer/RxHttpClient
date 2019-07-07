@@ -168,7 +168,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
 
     @Test
     public void testHttp4xxResponseOnGET() throws InterruptedException {
-        //no stub set-up so we always get a 404 response.
+        stubFor(get(urlPathEqualTo("/contacts")).willReturn(aResponse().withStatus(404)));
 
         //set up use case
         String path = "/contacts";

@@ -1,9 +1,7 @@
 package be.wegenenverkeer;
 
 import be.wegenenverkeer.rxhttp.Dechunker;
-import be.wegenenverkeer.rxhttp.Dechunkers;
 import be.wegenenverkeer.rxhttp.ServerResponseBodyPart;
-import be.wegenenverkeer.rxhttp.ServerResponseElement;
 import org.junit.Test;
 import rx.Observable;
 import rx.observers.TestSubscriber;
@@ -13,7 +11,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static be.wegenenverkeer.TestSRBP.*;
+import static be.wegenenverkeer.TestSRBP.bp;
+import static be.wegenenverkeer.TestSRBP.last;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -21,7 +20,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class DechunkersTest {
 
-
+    private static Charset UTF8 = Charset.forName("UTF8");
 
     @Test
     public void testStringDechunker(){
@@ -61,15 +60,31 @@ public class DechunkersTest {
     }
 
 
+    @Test
+    public void testStringDechunkerCombinedThenEmpty(){
+        assertEquals(Arrays.asList("first", "second", "third"), receivedOnInput(
+                bp("first\nsecond"),bp(""),
+                last("third")
+        ));
+    }
+
+    @Test
+    public void testStringDechunkerSeparatorAsChunk(){
+        assertEquals(Arrays.asList("first", "second", "third"), receivedOnInput(
+                bp("fi"), bp("rst\n"), bp("\n"), bp("sec"),bp("ond\n"), bp("\n"),
+                last("third")
+        ));
+    }
+
 
 
     public List<String> receivedOnInput(TestSRBP... chunks) {
-        Dechunker<String> dechunker = Dechunkers.mkStringDechunker("\n", true);
+
         TestSubscriber<String> subscriber = new TestSubscriber<>();
         Observable.from(chunks)
-                .concatMap(dechunker::dechunk)
+                .lift(new Dechunker("\n", true, UTF8))
                 .subscribe(subscriber);
-        subscriber.awaitTerminalEvent(60, TimeUnit.MILLISECONDS);
+        subscriber.awaitTerminalEvent(10, TimeUnit.MILLISECONDS);
         return subscriber.getOnNextEvents();
     }
 }
