@@ -48,7 +48,7 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMock{
         Observable<String> observable = client.executeAndDechunk(request, "\n");
         TestSubscriber<String> subscriber = new TestSubscriber<>();
         observable.subscribe(subscriber);
-        subscriber.awaitTerminalEvent(60, TimeUnit.MILLISECONDS);
+        subscriber.awaitTerminalEvent(120, TimeUnit.MILLISECONDS);
 
         assertEquals(10, subscriber.getOnNextEvents().size());
 
