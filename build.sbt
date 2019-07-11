@@ -11,81 +11,6 @@ val ScalaBuildOptions = Seq("-unchecked",
                             "-language:implicitConversions",
                             "-language:postfixOps")
 
-lazy val testSettings = Seq(
-  libraryDependencies ++= mainTestDependencies,
-  parallelExecution in Test := false
-)
-
-val publishingCredentials = (for {
-  username <- Option(System.getenv().get("SONATYPE_USERNAME"))
-  password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-} yield
-  Seq(
-    Credentials("Sonatype Nexus Repository Manager",
-                "oss.sonatype.org",
-                username,
-                password))).getOrElse(Seq())
-
-val publishSettings = Seq(
-  publishMavenStyle := true,
-  pomIncludeRepository := { _ =>
-    false
-  },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
-  pomExtra := pomInfo,
-  credentials ++= publishingCredentials
-)
-
-//  lazy val siteSettings =
-//    site.settings ++
-//      site.includeScaladoc()
-
-lazy val extraJavaSettings = Seq(
-  crossPaths := false,
-  autoScalaLibrary := false,
-  Test / parallelExecution := false,
-  //    javacOptions ++= Seq("-Xlint:deprecation"),
-  testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
-)
-
-def moduleSettings(extraDependencies: Seq[ModuleID] = Seq()) = {
-  Seq(
-    organization := "be.wegenenverkeer",
-    version := Version,
-    scalaVersion := ScalaVersion,
-    scalacOptions := ScalaBuildOptions,
-    parallelExecution := false,
-    resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
-    resolvers += Resolver.typesafeRepo("releases"),
-    libraryDependencies ++= extraDependencies
-  ) ++ testSettings ++ publishSettings //++ jacoco.settings
-}
-
-lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
-  <licenses>
-    <license>
-      <name>MIT licencse</name>
-      <url>http://opensource.org/licenses/MIT</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-  <scm>
-    <url>git@github.com:WegenenVerkeer/atomium.git</url>
-    <connection>scm:git:git@github.com:WegenenVerkeer/atomium.git</connection>
-  </scm>
-  <developers>
-    <developer>
-      <id>AWV</id>
-      <name>De ontwikkelaars van AWV</name>
-      <url>http://www.wegenenverkeer.be</url>
-    </developer>
-  </developers>
 
 val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.8.1"
 val rxjava = "io.reactivex" % "rxjava" % "1.2.4"
@@ -130,22 +55,93 @@ lazy val disablePublishingRoot = Seq(
   publish / skip := true
 )
 
+
+lazy val moduleSettings =
+  Seq(
+    organization := "be.wegenenverkeer",
+    version := Version,
+    scalaVersion := ScalaVersion,
+    scalacOptions := ScalaBuildOptions,
+    parallelExecution := false,
+    resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
+    resolvers += Resolver.typesafeRepo("releases"),
+  ) ++ testSettings ++ publishSettings //++ jacoco.settings
+
+lazy val extraJavaSettings = Seq(
+  crossPaths := false,
+  autoScalaLibrary := false,
+  //Test / parallelExecution := false,
+  //    javacOptions ++= Seq("-Xlint:deprecation"),
+  testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
+)
+
+lazy val testSettings = Seq(
+  libraryDependencies ++= mainTestDependencies,
+  parallelExecution in Test := false
+)
+
 lazy val javaModule = (project in file("modules/java")).settings(
   name := "RxHttpClient-java",
-  moduleSettings(javaDependencies),
+  moduleSettings,
+  libraryDependencies ++= javaDependencies,
   extraJavaSettings
 )
 
 lazy val scalaModule = (project in file("modules/scala")).settings(
   name := "RxHttpClient-scala",
-  moduleSettings(),
-  //crossScalaVersions := Seq("2.12.8"),
+  moduleSettings,
   libraryDependencies ++= scalaDependencies
 ) dependsOn javaModule
 
 lazy val main = (project in file("."))
   .settings(
-    moduleSettings() ++ disablePublishingRoot,
+    moduleSettings ++ disablePublishingRoot,
     name := "RxHttpClient"
   )
   .aggregate(javaModule, scalaModule)
+
+lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
+  <licenses>
+    <license>
+      <name>MIT licencse</name>
+      <url>http://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>git@github.com:WegenenVerkeer/atomium.git</url>
+    <connection>scm:git:git@github.com:WegenenVerkeer/atomium.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>AWV</id>
+      <name>De ontwikkelaars van AWV</name>
+      <url>http://www.wegenenverkeer.be</url>
+    </developer>
+  </developers>
+
+val publishingCredentials = (for {
+  username <- Option(System.getenv().get("SONATYPE_USERNAME"))
+  password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
+} yield
+  Seq(
+    Credentials("Sonatype Nexus Repository Manager",
+      "oss.sonatype.org",
+      username,
+      password))).getOrElse(Seq())
+
+val publishSettings = Seq(
+  publishMavenStyle := true,
+  pomIncludeRepository := { _ =>
+    false
+  },
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  },
+  pomExtra := pomInfo,
+  credentials ++= publishingCredentials
+)
