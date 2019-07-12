@@ -1,12 +1,18 @@
 package be.wegenenverkeer.rxhttp;
 
 import io.netty.handler.codec.http.HttpHeaders;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
+import io.reactivex.subjects.BehaviorSubject;
 import org.asynchttpclient.AsyncHandler;
 import org.asynchttpclient.HttpResponseBodyPart;
 import org.asynchttpclient.HttpResponseStatus;
+import org.asynchttpclient.handler.StreamedAsyncHandler;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.subjects.BehaviorSubject;
+
 
 import java.io.UnsupportedEncodingException;
 import java.util.Optional;
@@ -17,6 +23,10 @@ import java.util.Optional;
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
+
+    //Note: we don't use the StreamedAsyncHandler because on very small responses, the Publisher gets shut down before it can start emitting
+    //values (or so it seems).
+    // See also this message: https://groups.google.com/forum/#!searchin/asynchttpclient/streamedasynchandler%7Csort:date/asynchttpclient/h5E98f50Zco/b6fgEtTbAQAJ
 
     final private static Logger logger = LoggerFactory.getLogger(AsyncHandlerWrapper.class);
     final private BehaviorSubject<ServerResponseElement> subject;
@@ -49,15 +59,14 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      */
     @Override
     public State onBodyPartReceived(HttpResponseBodyPart bodyPart) {
-        if (!subject.hasObservers()) {
+        if(!subject.hasObservers()) {
             trace("No observers: Aborting.");
             //bodyPart.markUnderlyingConnectionAsToBeClosed();
             onCompleted(); //send the uncompleted message
             return State.ABORT;
         }
-        ServerResponseBodyPart sbp = new ServerResponseBodyPartImpl(bodyPart.getBodyPartBytes(), bodyPart.isLast());
-        trace(String.format("onNext: '%s' %s", toUtf8String(sbp), sbp.isLast() ? "(last)" : ""));
-        subject.onNext(sbp);
+        subject.onNext(new ServerResponseBodyPartImpl(bodyPart.getBodyPartBytes(), bodyPart.isLast()));
+
         return State.CONTINUE;
     }
 
@@ -99,6 +108,10 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
             public Optional<String> getStatusText() {
                 return Optional.ofNullable(responseStatus.getStatusText());
             }
+
+            public String toString(){
+                return String.format("Server response: %d", statuscode);
+            }
         });
         return State.CONTINUE;
     }
@@ -127,7 +140,7 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
     @Override
     public Boolean onCompleted() {
         trace("Completed");
-        subject.onCompleted();
+        subject.onComplete();
         return true;
     }
 
@@ -136,4 +149,5 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
             logger.trace(msg);
         }
     }
+
 }

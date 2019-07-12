@@ -42,4 +42,8 @@ class ServerResponseHeadersImpl implements ServerResponseHeaders {
         if (l.isEmpty()) return Optional.empty();
         return Optional.ofNullable(l.get(0));
     }
+
+    public String toString(){
+        return headers.toString();
+    }
 }

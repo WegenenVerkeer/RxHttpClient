@@ -1,11 +1,11 @@
 package be.wegenenverkeer.rxhttp;
 
+import io.reactivex.exceptions.ProtocolViolationException;
+import io.reactivex.subjects.AsyncSubject;
 import org.asynchttpclient.AsyncCompletionHandler;
 import org.asynchttpclient.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.exceptions.OnErrorFailedException;
-import rx.subjects.AsyncSubject;
 
 import java.util.function.Function;
 
@@ -45,15 +45,15 @@ class AsyncCompletionHandlerWrapper<F> extends AsyncCompletionHandler<F> {
                     (r) -> {
                         F value = handler.apply(wrap(r));
                         if (value != null) subject.onNext(value);
-                        subject.onCompleted();
+                        subject.onComplete();
                     },
                     subject::onError,
                     subject::onError
             );
         } catch (Throwable t) {
             //TODO Should this logging not be done in the global onError handler? See Class RxJavaErrorHandler
-            if (t instanceof OnErrorFailedException) {
-                logger.error("onError handler failed: " + t.getMessage(), t);
+            if (t instanceof ProtocolViolationException) {
+                logger.error("Protocol Violation Exception: " + t.getMessage(), t);
             }
             subject.onError(t);
         }

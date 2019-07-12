@@ -2,18 +2,17 @@ package be.wegenenverkeer.rxhttp;
 
 import be.wegenenverkeer.rxhttp.aws.*;
 import io.netty.handler.ssl.SslContext;
-import org.asynchttpclient.AsyncCompletionHandler;
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.subjects.AsyncSubject;
+import io.reactivex.subjects.BehaviorSubject;
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.DefaultAsyncHttpClientConfig;
-import org.asynchttpclient.Response;
 import org.asynchttpclient.filter.RequestFilter;
 import org.asynchttpclient.filter.ThrottleRequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.subjects.AsyncSubject;
-import rx.subjects.BehaviorSubject;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -23,8 +22,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Function;
 
-import static be.wegenenverkeer.rxhttp.CompleteResponseHandler.withCompleteResponse;
-import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
 import static org.asynchttpclient.Dsl.asyncHttpClient;
 
 /**
@@ -44,7 +41,7 @@ public class RxHttpClient {
     protected RxHttpClient(AsyncHttpClient innerClient, RestClientConfig config, ClientRequestLogFormatter logFmt, RequestSigner... requestSigners) {
         this.innerClient = innerClient;
         this.config = config;
-        this.requestSigners = Collections.unmodifiableList(Arrays.asList(requestSigners));
+        this.requestSigners = List.of(requestSigners);
         this.logFormatter = logFmt;
     }
 
@@ -57,32 +54,9 @@ public class RxHttpClient {
         //because we need a CompletableFuture so that interop with Scala is possible
         final CompletableFuture<F> future = new CompletableFuture<>();
 
-        innerClient.executeRequest(request.unwrap(), new AsyncCompletionHandler<F>() {
-            @Override
-            public F onCompleted(Response response) {
-                try {
-                    withCompleteResponse(response,
-                            (r) -> {
-                                F transformed = transformer.apply(wrap(response));
-                                future.complete(transformed);
-                            },
-                            future::completeExceptionally,
-                            future::completeExceptionally
-                    );
-                } catch (Throwable t) {
-                    logger.error("onError handler failed: " + t.getMessage(), t);
-                    future.completeExceptionally(t);
-                }
-                return null;
-            }
-
-            @Override
-            public void onThrowable(Throwable t) {
-                super.onThrowable(t);
-                future.completeExceptionally(t);
-            }
-        });
-        return future;
+        return innerClient.executeRequest(request.unwrap()).toCompletableFuture()
+                .thenApply( ServerResponse::wrap )
+                .thenApply( transformer );
     }
 
     /**
@@ -120,6 +94,7 @@ public class RxHttpClient {
         return Observable.defer(() -> {
             BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
             innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
+
             return subject;
         });
     }
@@ -135,11 +110,11 @@ public class RxHttpClient {
      *
      * @param request the request to send
      * @param separator the separator
-     * @return a cold observable of messages (UTF8 Strings)
-     * @see Observable#defer
+     * @return a cold Flowable of messages (UTF8 Strings)
+
      */
-    public Observable<String> executeAndDechunk(ClientRequest request, String separator) {
-        return executeObservably(request).lift(new Dechunker(separator, false, UTF8));
+    public Flowable<String> executeAndDechunk(ClientRequest request, String separator) {
+        return executeAndDechunk(request, separator, Charset.forName("UTF8"));
     }
 
     /**
@@ -154,11 +129,14 @@ public class RxHttpClient {
      * @param request the request to send
      * @param separator the separator
      * @param charset the character set of the messages
-     * @return a cold observable of messages (Strings in the specified Charset)
-     * @see Observable#defer
+     * @return a cold Flowable of messages (Strings in the specified Charset)
      */
-    public Observable<String> executeAndDechunk(ClientRequest request, String separator, Charset charset) {
-        return executeObservably(request).lift(new Dechunker(separator, false, charset));
+    public Flowable<String> executeAndDechunk(ClientRequest request, String separator, Charset charset) {
+        return executeObservably(request)
+                .filter(sre -> sre instanceof ServerResponseBodyPart)
+                .map( sre ->  new String(((ServerResponseBodyPart)sre).getBodyPartBytes(), charset))
+                .toFlowable(BackpressureStrategy.BUFFER)
+                .lift(new Dechunker(separator));
     }
 
 
@@ -319,7 +297,7 @@ public class RxHttpClient {
 
             BuildValidation validation = validate(config);
 
-            validation.logWarnings(logger);
+            validation.logWarnings();
             if (validation.hasErrors()) {
                 throw new IllegalStateException(validation.getErrorMessage());
             }
@@ -934,9 +912,9 @@ public class RxHttpClient {
             return !errors.isEmpty();
         }
 
-        void logWarnings(Logger logger) {
+        void logWarnings() {
             for (String msg : warnings) {
-                logger.warn(msg);
+                Builder.logger.warn(msg);
             }
         }
 

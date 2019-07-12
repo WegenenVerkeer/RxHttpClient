@@ -7,10 +7,9 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.Options
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
+import io.reactivex.Flowable
+import io.reactivex.subscribers.TestSubscriber
 import org.specs2.mutable.{After, Specification}
-import rx.lang.scala.Observable
-import rx.lang.scala.observers.TestSubscriber
-import rx.observers.TestObserver
 
 import scala.concurrent.{Await, Future}
 
@@ -28,7 +27,7 @@ class RxHTTPClientGetSpecs extends Specification {
 
     "The GET request " should {
 
-      "return scala Observable with executeObservably" in new UsingMockServer {
+      "return a Flowable with executeObservably" in new UsingMockServer {
         val expectBody: String = "{ 'contacts': [1,2,3] }"
 
         stubFor(get(urlPathEqualTo("/contacts"))
@@ -45,20 +44,13 @@ class RxHTTPClientGetSpecs extends Specification {
           .addQueryParam("q", "test")
           .build()
 
-        val observable: Observable[String] = client.executeObservably(req, (bytes: Array[Byte]) => new String(bytes))
-
-        val response = observable
-          .toBlocking
-          .singleOption
-
-        response must beSome(expectBody)
+        val observable: Flowable[String] = Flowable.fromPublisher(client.executeObservably(req, (bytes: Array[Byte]) => new String(bytes)))
+        val response = observable.blockingLast()
+        response must_== expectBody
       }
 
 
       "return scala Future with execute" in new UsingMockServer {
-
-
-
 
         val expectBody: String = "{ 'contacts': [1,2,3] }"
 
@@ -102,13 +94,11 @@ class RxHTTPClientGetSpecs extends Specification {
           .build()
 
 
-        val observable: Observable[String] = client.executeToCompletion(req, (resp: ServerResponse) => resp.getResponseBody)
+        val observable: Flowable[String] = Flowable.fromPublisher(client.executeToCompletion(req, (resp: ServerResponse) => resp.getResponseBody))
 
-        val response = observable
-          .toBlocking
-          .singleOption
+        val response = observable.blockingLast()
 
-        response must beSome(expectBody)
+        response must_== expectBody
       }
 
       "return delimited evens (Strings)" in new UsingMockServer {
@@ -120,14 +110,14 @@ class RxHTTPClientGetSpecs extends Specification {
 
         val request: ClientRequest = client.requestBuilder.setMethod("GET").setUrlRelativetoBase("/sse").build
 
-        val observable = client.executeAndDechunk(request, "\n")
+        val observable = Flowable.fromPublisher(client.executeAndDechunk(request, "\n"))
 
-        val testSub = TestSubscriber[String]
+        val testSub : TestSubscriber[String] = new TestSubscriber[String]
         observable.subscribe(testSub)
 
-        testSub.awaitTerminalEvent(1.seconds)
+        testSub.awaitDone(1, SECONDS)
 
-        testSub.getOnNextEvents.size must beEqualTo(10)
+        testSub.assertValueCount(10)
 
       }
     }

@@ -3,10 +3,10 @@ package be.wegenenverkeer.rxhttp.aws;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.RxHttpClient;
 import be.wegenenverkeer.rxhttp.ServerResponse;
+import io.reactivex.Observable;
+import io.reactivex.observers.TestObserver;
 import org.junit.Ignore;
 import org.junit.Test;
-import rx.Observable;
-import rx.observers.TestSubscriber;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,16 +39,13 @@ public class TestS3ApiCall {
 
         Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-        TestSubscriber<String> sub = new TestSubscriber<>();
+        TestObserver<String> sub = new TestObserver<>();
         observable.subscribe(sub);
 
-        sub.awaitTerminalEvent(6000, TimeUnit.MILLISECONDS);
-        sub.getOnErrorEvents().forEach( t -> System.out.println(t.getMessage()));
+        sub.awaitDone(6000, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
 
-        List<String>  expectedItems = new ArrayList<String>();
-        expectedItems.add("This is a test\n");
-        sub.assertReceivedOnNext(expectedItems);
+        sub.assertValues("This is a test\n");
     }
 
 }

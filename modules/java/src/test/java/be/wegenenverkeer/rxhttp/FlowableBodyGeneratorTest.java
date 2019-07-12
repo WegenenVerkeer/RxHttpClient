@@ -3,13 +3,12 @@ package be.wegenenverkeer.rxhttp;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.reactivex.Flowable;
+import io.reactivex.schedulers.Schedulers;
 import org.asynchttpclient.request.body.Body;
 import org.junit.Test;
-import rx.Observable;
-import rx.schedulers.Schedulers;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.asynchttpclient.request.body.Body.BodyState.STOP;
 import static org.junit.Assert.assertEquals;
 
-public class ObservableBodyGeneratorTest {
+public class FlowableBodyGeneratorTest {
 
     private final Random random = new Random();
     private final int chunkSize = 1024 * 8;
@@ -33,8 +32,8 @@ public class ObservableBodyGeneratorTest {
         final int srcArraySize = chunkSize - 1;
         final byte[] srcArray = sourceArray(srcArraySize);
 
-        Observable<byte[]> observable = Observable.just(srcArray);
-        ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable);
+        Flowable<byte[]> observable = Flowable.just(srcArray);
+        FlowableBodyGenerator bodyGenerator = new FlowableBodyGenerator(observable);
 
         Body body = bodyGenerator.createBody();
         final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
@@ -52,8 +51,8 @@ public class ObservableBodyGeneratorTest {
         final int srcArraySize = (3 * chunkSize) + 42;
         final byte[] srcArray = sourceArray(srcArraySize);
 
-        Observable<byte[]> observable = Observable.just(srcArray);
-        ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable);
+        Flowable<byte[]> observable = Flowable.just(srcArray);
+        FlowableBodyGenerator bodyGenerator = new FlowableBodyGenerator(observable);
 
         Body body = bodyGenerator.createBody();
         final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
@@ -73,8 +72,8 @@ public class ObservableBodyGeneratorTest {
     public void testMultipleReadsFromMultipleSource() throws IOException {
         final int srcArraySize = chunkSize;
 
-        Observable<byte[]> observable = Observable.just(sourceArray(srcArraySize), sourceArray(srcArraySize), sourceArray(srcArraySize), sourceArray(42));
-        ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable);
+        Flowable<byte[]> observable = Flowable.just(sourceArray(srcArraySize), sourceArray(srcArraySize), sourceArray(srcArraySize), sourceArray(42));
+        FlowableBodyGenerator bodyGenerator = new FlowableBodyGenerator(observable);
 
         Body body = bodyGenerator.createBody();
         final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
@@ -94,7 +93,7 @@ public class ObservableBodyGeneratorTest {
     public void testSlowProducer() throws IOException {
         final AtomicInteger size = new AtomicInteger();
 
-        Observable<byte[]> observable = Observable
+        Flowable<byte[]> observable = Flowable
                 .interval(50, TimeUnit.MILLISECONDS)
                 .map(i -> {
                     int arraySize = chunkSize - 128 + random.nextInt(256);
@@ -103,7 +102,7 @@ public class ObservableBodyGeneratorTest {
                 })
                 .take(20);
 
-        ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable, 1);
+        FlowableBodyGenerator bodyGenerator = new FlowableBodyGenerator(observable, 1);
         Body body = bodyGenerator.createBody();
         final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
 
@@ -119,7 +118,7 @@ public class ObservableBodyGeneratorTest {
     public void testSlowConsumer() throws IOException, InterruptedException {
         final AtomicInteger size = new AtomicInteger();
 
-        Observable<byte[]> observable = Observable
+        Flowable<byte[]> observable = Flowable
                 .fromCallable(() -> {
                     int arraySize = chunkSize - 128 + random.nextInt(256);
                     size.addAndGet(arraySize);
@@ -128,7 +127,7 @@ public class ObservableBodyGeneratorTest {
                 .repeat(50)
                 .observeOn(Schedulers.computation());
 
-        ObservableBodyGenerator bodyGenerator = new ObservableBodyGenerator(observable, 2);
+        FlowableBodyGenerator bodyGenerator = new FlowableBodyGenerator(observable, 2);
         Body body = bodyGenerator.createBody();
         final ByteBuf chunkBuffer = Unpooled.buffer(chunkSize);
 

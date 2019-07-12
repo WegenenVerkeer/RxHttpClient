@@ -3,19 +3,17 @@ package be.wegenenverkeer.designtests;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.ServerResponse;
 import com.jayway.jsonpath.JsonPath;
+import io.reactivex.Observable;
+import io.reactivex.observers.TestObserver;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.observables.BlockingObservable;
-import rx.observers.TestSubscriber;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 27/11/15.
@@ -25,7 +23,7 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
     private static Logger LOGGER = LoggerFactory.getLogger(RxHttpClientMultipleRequests.class);
 
     @Test
-    public void demonstrateComposableObservable() throws InterruptedException {
+    public void demonstrateComposableObservable() {
         //set up stubs
         String expectBody = "{ 'contacts': ['contacts/1','contacts/2','contacts/3', 'contacts/4', 'contacts/5', 'contacts/6', 'contacts/7'] }";
         stubFor(get(urlPathEqualTo("/contacts"))
@@ -74,21 +72,21 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
                 .flatMap(body -> {
                     List<String> l = JsonPath.read(body, "$.contacts");
                     LOGGER.info("Retrieved contact list");
-                    return Observable.from(l);
-                }).concatMap( contactUrl -> followLink.apply(contactUrl) );
+                    return Observable.fromIterable(l);
+                }).concatMap(followLink::apply);
 
         LOGGER.info("Observable created");
 
         //verify behaviour
-        TestSubscriber<String> sub = new TestSubscriber<>();
+        TestObserver<String> sub = new TestObserver<>();
 
         LOGGER.info("Subscribing to Observer");
         observable.subscribe(sub);
 
-        sub.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
 
         sub.assertNoErrors();
-        assertEquals(items("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN"), sub.getOnNextEvents());
+        sub.assertValues("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN");
 
     }
 

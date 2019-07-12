@@ -1,11 +1,14 @@
 package be.wegenenverkeer.rxhttp;
 
-import rx.Subscriber;
+import io.reactivex.subscribers.DefaultSubscriber;
+import io.reactivex.subscribers.ResourceSubscriber;
+import org.reactivestreams.Subscriber;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
@@ -18,7 +21,7 @@ import java.util.function.Function;
  *
  * Created by Karel Maesen, Geovise BVBA on 19/12/14.
  */
-public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
+public class CollectingSubscriber<T> extends DefaultSubscriber<ServerResponseElement> {
 
 
     final private CompletableFuture<List<T>> cfuture = new CompletableFuture<>();
@@ -50,7 +53,7 @@ public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
      * The {@code Observable} will not call this method if it calls {@link #onError}.
      */
     @Override
-    public void onCompleted() {
+    public void onComplete() {
         cfuture.complete(Collections.unmodifiableList(accumulator));
     }
 
@@ -58,7 +61,7 @@ public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
      * Notifies the Observer that the {@code Observable} has experienced an error condition.
      * <p>
      * If the {@code Observable} calls this method, it will not thereafter call {@link #onNext} or
-     * {@link #onCompleted}.
+     * {@link #onComplete}.
      *
      * @param e the exception encountered by the Observable
      */
@@ -72,7 +75,7 @@ public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
      * <p>
      * The {@code Observable} may call this method 0 or more times.
      * <p>
-     * The {@code Observable} will not call this method again after it calls either {@link #onCompleted} or
+     * The {@code Observable} will not call this method again after it calls either {@link #onComplete} or
      * {@link #onError}.
      *
      * @param serverResponseElement the item emitted by the Observable
@@ -88,7 +91,7 @@ public class CollectingSubscriber<T> extends Subscriber<ServerResponseElement> {
      * @return the items already received.
      */
     public List<T> collectImmediately(){
-        this.unsubscribe();
+        this.cancel();
         return new ArrayList<>(accumulator);
     }
 

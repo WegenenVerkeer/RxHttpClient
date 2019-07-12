@@ -1,13 +1,15 @@
 package be.wegenenverkeer.rxhttp;
 
 import io.netty.buffer.ByteBuf;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.observers.DisposableObserver;
 import org.asynchttpclient.request.body.Body;
 import org.asynchttpclient.request.body.generator.BodyGenerator;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Subscriber;
-import rx.Subscription;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -22,49 +24,51 @@ import java.util.concurrent.BlockingQueue;
  * To avoid this call subscribeOn before passing in the Observable with a Scheduler specific for your use case, f.e. Schedulers.io()
  * Otherwise this is fully back-pressured.
  */
-public class ObservableBodyGenerator implements BodyGenerator {
+public class FlowableBodyGenerator implements BodyGenerator {
 
-    private static final Logger logger = LoggerFactory.getLogger(ObservableBodyGenerator.class);
+    private static final Logger logger = LoggerFactory.getLogger(FlowableBodyGenerator.class);
 
     private static final int DEFAULT_CAPACITY = 10;
 
-    private final Observable<byte[]> observable;
+    private final Flowable<byte[]> observable;
     private Subscription subscription;
 
     private BlockingQueue<BodyPart> queue;
     private volatile Throwable throwable = null;
 
-    public ObservableBodyGenerator(Observable<byte[]> observable) {
+    public FlowableBodyGenerator(Flowable<byte[]> observable) {
         this(observable, DEFAULT_CAPACITY);
     }
 
-    public ObservableBodyGenerator(Observable<byte[]> observable, int queueCapacity) {
+    public FlowableBodyGenerator(Flowable<byte[]> observable, int queueCapacity) {
         this.observable = observable;
         this.queue = new ArrayBlockingQueue<>(queueCapacity);
     }
 
     @Override
     public Body createBody() {
-        subscription = this.observable.subscribe(new Subscriber<byte[]>() {
+        this.observable.subscribe(new Subscriber<byte[]>() {
+
 
             @Override
-            public void onStart() {
-                request(queue.remainingCapacity()); //request as many as the queue can handle
-            }
-
-            @Override
-            public void onCompleted() {
+            public void onComplete() {
                 try {
                     queue.put(new BodyPart(new byte[0], true)); //blocks until space available in queue
                 } catch (InterruptedException e) {
-                    ObservableBodyGenerator.logger.warn("Interrupted", e);
+                    FlowableBodyGenerator.logger.warn("Interrupted", e);
                 }
             }
 
             @Override
             public void onError(Throwable t) {
-                ObservableBodyGenerator.logger.warn("Unable to read", t);
-                ObservableBodyGenerator.this.throwable = t;
+                FlowableBodyGenerator.logger.warn("Unable to read", t);
+                FlowableBodyGenerator.this.throwable = t;
+            }
+
+            @Override
+            public void onSubscribe(Subscription s) {
+                subscription = s;
+                subscription.request(queue.remainingCapacity());
             }
 
             @Override
@@ -73,9 +77,9 @@ public class ObservableBodyGenerator implements BodyGenerator {
                     if (bytes.length > 0) {
                         queue.put(new BodyPart(bytes, false)); //blocks until space available in queue
                     }
-                    request(Math.max(queue.remainingCapacity(), 1)); // always request at least one
+                    subscription.request(Math.max(queue.remainingCapacity(), 1)); // always request at least one
                 } catch (InterruptedException e) {
-                    ObservableBodyGenerator.logger.warn("Interrupted", e);
+                    FlowableBodyGenerator.logger.warn("Interrupted", e);
                 }
             }
         });
@@ -134,7 +138,7 @@ public class ObservableBodyGenerator implements BodyGenerator {
 
         @Override
         public void close() {
-            ObservableBodyGenerator.this.subscription.unsubscribe();
+            FlowableBodyGenerator.this.subscription.cancel();
         }
     }
 

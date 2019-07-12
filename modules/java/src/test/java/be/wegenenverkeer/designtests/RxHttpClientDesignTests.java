@@ -1,20 +1,20 @@
 package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.rxhttp.*;
-import com.jayway.jsonpath.JsonPath;
+import io.reactivex.Observable;
+import io.reactivex.observers.TestObserver;
+import io.reactivex.subscribers.TestSubscriber;
 import org.junit.Test;
-import rx.Observable;
-import rx.observers.TestSubscriber;
 
-import java.util.*;
+import java.nio.charset.Charset;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Behavior Unit test
@@ -24,13 +24,50 @@ public class RxHttpClientDesignTests extends UsingWireMock{
 
 
     @Test
-    public void GETHappyPath() throws InterruptedException {
+    public void GETObservably() {
         //set up stub
         String expectBody = "{ 'contacts': [1,2,3] }";
         stubFor(get(urlPathEqualTo("/contacts"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(200)
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(expectBody)));
+
+        //set up use case
+        String path = "/contacts";
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase(path)
+                .addQueryParam("q", "test")
+                .build();
+
+        Observable<String> observable = client.executeObservably(request, bytes -> new String(bytes, Charset.forName("UTF8")));
+
+
+//        String out = observable.blockingFirst();
+//
+        TestObserver<String> sub = new TestObserver<>();
+        observable.subscribe(sub);
+
+        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.assertNoErrors();
+
+        sub.assertValues(expectBody);
+        
+
+
+    }
+
+    @Test
+    public void GETHappyPath() {
+        //set up stub
+        String expectBody = "{ 'contacts': [1,2,3] }";
+        stubFor(get(urlPathEqualTo("/contacts"))
+                .withQueryParam("q", equalTo("test"))
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(expectBody)));
@@ -46,23 +83,23 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
 
-        TestSubscriber<String> sub = new TestSubscriber<>();
+        TestObserver<String> sub = new TestObserver<>();
         observable.subscribe(sub);
 
-        sub.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
 
-        sub.assertReceivedOnNext(items(expectBody));
+        sub.assertValues(expectBody);
+
 
 
     }
 
     /**
      * Proves that UTF-8 charset is used as default.
-     * @throws InterruptedException
      */
     @Test
-    public void testCharsetEncodingDefaultsToUTF8() throws InterruptedException {
+    public void testCharsetEncodingDefaultsToUTF8() {
 
         //set up stub
         String expectBody = "{ 'contacts': 'žẽūș' }"; // with chars only available in UTF-8
@@ -86,21 +123,20 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
 
-        TestSubscriber<String> sub = new TestSubscriber<>();
+        TestObserver<String> sub = new TestObserver<>();
         observable.subscribe(sub);
 
-        sub.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
 
-        sub.assertReceivedOnNext(items(expectBody));
+        sub.assertValues(expectBody);
     }
 
     /**
      * Proves that charset when present in content type gets priority over default UTF-8
-     * @throws InterruptedException
      */
     @Test
-    public void testCharsetEncodingInContentType() throws InterruptedException {
+    public void testCharsetEncodingInContentType() {
 
         //set up stub
         String expectBody = "{ 'contacts': 'žẽūș' }"; // with chars only available in UTF-8
@@ -124,14 +160,14 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
 
-        TestSubscriber<String> sub = new TestSubscriber<>();
+        TestObserver<String> sub = new TestObserver<>();
         observable.subscribe(sub);
 
-        sub.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
 
         try {
-            sub.assertReceivedOnNext(items(expectBody));
+            sub.assertValues(expectBody);
             fail("Expecting wrongly parsed body");
         } catch (AssertionError exp) {
              // failure expected
@@ -167,7 +203,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
     }
 
     @Test
-    public void testHttp4xxResponseOnGET() throws InterruptedException {
+    public void testHttp4xxResponseOnGET() {
         stubFor(get(urlPathEqualTo("/contacts")).willReturn(aResponse().withStatus(404)));
 
         //set up use case
@@ -175,24 +211,21 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
         Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-        TestSubscriber<String> testsubscriber = new TestSubscriber<>();
-        observable.subscribe(testsubscriber);
+        TestObserver<String> sub = new TestObserver<>();
+        observable.subscribe(sub);
 
-        testsubscriber.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
 
-        List onErrorEvents = testsubscriber.getOnErrorEvents();
-        assertFalse(onErrorEvents.isEmpty());
-        if (onErrorEvents.get(0) instanceof HttpClientError) {
-            HttpClientError hce = (HttpClientError) onErrorEvents.get(0);
-            assertEquals(404, hce.getStatusCode());
-        } else {
-            fail("Didn't receive a HttpClientError");
-        }
-
+        sub.assertError( t -> {
+            if(t instanceof HttpClientError) {
+                return ((HttpClientError)t).getStatusCode() == 404;
+            }
+            return false;
+        });
     }
 
     @Test
-    public void testHttp5xxResponseOnGET() throws InterruptedException {
+    public void testHttp5xxResponseOnGET(){
         //set up stub
         stubFor(get(urlEqualTo("/contacts"))
                 .withHeader("Accept", equalTo("application/json"))
@@ -207,25 +240,23 @@ public class RxHttpClientDesignTests extends UsingWireMock{
                 .build();
 
         Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
-        TestSubscriber<String> testsubscriber = new TestSubscriber<>();
+        TestObserver<String> testsubscriber = new TestObserver<>();
         observable.subscribe(testsubscriber);
 
-        testsubscriber.awaitTerminalEvent(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
 
-        List onErrorEvents = testsubscriber.getOnErrorEvents();
-        assertFalse(onErrorEvents.isEmpty());
-        if (onErrorEvents.get(0) instanceof HttpServerError) {
-            HttpServerError hce = (HttpServerError) onErrorEvents.get(0);
-            assertEquals(500, hce.getStatusCode());
-        } else {
-            fail("Didn't receive a HttpClientError");
-        }
+        testsubscriber.assertError( t -> {
+            if(t instanceof HttpServerError) {
+                return ((HttpServerError)t).getStatusCode() == 500;
+            }
+            return false;
+        });
 
     }
 
 
     @Test
-    public void testConnectionTimeOut() throws InterruptedException {
+    public void testConnectionTimeOut(){
         //set up stub
         stubFor(get(urlEqualTo("/contacts"))
                 .withHeader("Accept", equalTo("application/json"))
@@ -245,14 +276,12 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
         Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-        TestSubscriber<String> testsubscriber = new TestSubscriber<>();
+        TestObserver<String> testsubscriber = new TestObserver<>();
         observable.subscribe(testsubscriber);
 
-        testsubscriber.awaitTerminalEvent(1000, TimeUnit.MILLISECONDS);
+        testsubscriber.awaitDone(1000, TimeUnit.MILLISECONDS);
 
-        List onErrorEvents = testsubscriber.getOnErrorEvents();
-        assertFalse(onErrorEvents.isEmpty());
-        assertTrue(onErrorEvents.get(0) instanceof TimeoutException);
+        testsubscriber.assertError(TimeoutException.class);
 
     }
 

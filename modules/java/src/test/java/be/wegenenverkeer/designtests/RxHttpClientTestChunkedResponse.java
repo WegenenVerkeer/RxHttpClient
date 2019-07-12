@@ -1,23 +1,18 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.rxhttp.*;
-import org.junit.Assert;
-import org.junit.Ignore;
+import be.wegenenverkeer.rxhttp.ClientRequest;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.observers.TestObserver;
+import io.reactivex.subscribers.TestSubscriber;
 import org.junit.Test;
-import rx.Observable;
-import rx.Subscription;
-import rx.observers.TestSubscriber;
+import org.reactivestreams.Subscription;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * Tests that demonstrate processing a long and slow chunked response.
@@ -45,12 +40,12 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMock{
                 .setUrlRelativetoBase("/sse")
                 .build();
 
-        Observable<String> observable = client.executeAndDechunk(request, "\n");
+        Flowable<String> observable = client.executeAndDechunk(request, "\n");
         TestSubscriber<String> subscriber = new TestSubscriber<>();
         observable.subscribe(subscriber);
-        subscriber.awaitTerminalEvent(120, TimeUnit.MILLISECONDS);
+        subscriber.awaitDone(120, TimeUnit.MILLISECONDS);
 
-        assertEquals(10, subscriber.getOnNextEvents().size());
+        subscriber.assertValueCount(10);
 
     }
 
@@ -71,14 +66,14 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMock{
                 .setMethod("GET")
                 .setUrlRelativetoBase("/sse")
                 .build();
-        Observable<String> observable = client.executeAndDechunk(request, "\n");
+        Flowable<String> observable = client.executeAndDechunk(request, "\n");
 
         TestSubscriber<String> subscriber = new TestSubscriber<>();
-        Subscription subscription = observable.subscribe(subscriber);
+        observable.subscribe(subscriber);
 
         Thread.sleep(50);
-        subscription.unsubscribe();
-        assertEquals(0, subscriber.getOnNextEvents().size());
+        subscriber.cancel();
+        subscriber.assertValueCount(0);
 
     }
 

@@ -1,7 +1,13 @@
 package be.wegenenverkeer.rxhttp;
 
-import rx.Observable;
-import rx.Subscriber;
+import io.reactivex.FlowableOperator;
+import io.reactivex.FlowableSubscriber;
+import io.reactivex.ObservableOperator;
+import io.reactivex.Observer;
+import io.reactivex.subscribers.DefaultSubscriber;
+import io.reactivex.subscribers.DisposableSubscriber;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -13,72 +19,70 @@ import java.util.Arrays;
  *
  *
  */
-public class Dechunker implements Observable.Operator<String, ServerResponseElement> {
+public class Dechunker implements FlowableOperator<String, String> {
 
     private final String separator;
-    private final boolean emptyIsSeparator;
-    private final Charset charset;
 
 
-    /**
-     * Creates an instance
-     * @param separator the separator character(s)
-     * @param emptyIsSeparator if set to true, empty chunks are treated as separators
-     * @param charset the character set of the message stream
-     */
-    public Dechunker(String separator, boolean emptyIsSeparator, Charset charset) {
-        this.separator = separator;
-        this.emptyIsSeparator = emptyIsSeparator;
-        this.charset = charset;
+    public Dechunker(String sep) {
+        this.separator = sep;
+
     }
 
     @Override
-    public Subscriber<ServerResponseElement> call(Subscriber<? super String> subscriber) {
-    return new Subscriber<ServerResponseElement>(subscriber){
+    public Subscriber<? super String> apply(Subscriber<? super String> subscriber) throws Exception {
+        return new Op(subscriber, separator);
+    }
+
+    static final class Op implements FlowableSubscriber<String>, Subscription {
+        final Subscriber<? super String> child;
+        final String separator;
 
         private String previous = "";
+        Subscription s;
+
+        public Op(Subscriber<? super String> child, String separator) {
+            this.child = child;
+            this.separator = separator;
+        }
+
 
         @Override
-        public void onCompleted() {
-            if (!subscriber.isUnsubscribed()) {
-                if (!previous.isEmpty()) {
-                    subscriber.onNext(previous);
-                }
-                subscriber.onCompleted();
-            }
+        public void onSubscribe(Subscription s) {
+            this.s =s;
+            child.onSubscribe(this);
         }
 
         @Override
-        public void onError(Throwable e) {
-            if (!subscriber.isUnsubscribed()) {
-                subscriber.onError(e);
-            }
-        }
-
-        @Override
-        public void onNext(ServerResponseElement element) {
-            if ( element instanceof ServerResponseBodyPart ) {
-                ServerResponseBodyPart sbp = (ServerResponseBodyPart) element;
-                if( emitOnEmpty(sbp) ) {
-                    subscriber.onNext(previous);
-                    previous = "";
-                }
-                String[] events = toChunks(bytesToString(sbp));
-                for( String ev : events) {
-                    if(!ev.isEmpty())  {
-                        subscriber.onNext(ev);
-                    }
+        public void onNext(String str) {
+            String[] events = toChunks(str);
+            for( String ev : events) {
+                if(!ev.isEmpty())  {
+                    child.onNext(ev);
                 }
             }
         }
 
-
-        private boolean emitOnEmpty(ServerResponseBodyPart sbp) {
-            return emptyIsSeparator && sbp.isEmpty() && !previous.isEmpty();
+        @Override
+        public void onError(Throwable t) {
+            child.onError(t);
         }
 
-        private String bytesToString(ServerResponseBodyPart part) {
-            return new String(part.getBodyPartBytes(), charset);
+        @Override
+        public void onComplete() {
+            if (!previous.isEmpty()) {
+                child.onNext(previous);
+            }
+        }
+
+        @Override
+        public void request(long n) {
+            s.request(n);
+        }
+
+        @Override
+        public void cancel() {
+            s.cancel();
         }
 
         private String[] toChunks(String chunk) {
@@ -92,9 +96,9 @@ public class Dechunker implements Observable.Operator<String, ServerResponseElem
                 return Arrays.copyOfRange(parts,0, parts.length - 1);
             }
         }
-
-    };
-
-
     }
+
+
+
+
 }
