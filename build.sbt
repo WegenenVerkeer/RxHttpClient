@@ -104,18 +104,13 @@ lazy val rxJavaModule = (project in file("modules/java")).settings(
   extraJavaSettings
 ) dependsOn coreModule
 
-lazy val scalaModule = (project in file("modules/scala")).settings(
-  name := "RxHttpClient-scala",
-  moduleSettings,
-  libraryDependencies ++= scalaDependencies
-) dependsOn coreModule
 
 lazy val main = (project in file("."))
   .settings(
     moduleSettings ++ disablePublishingRoot,
     name := "RxHttpClient"
   )
-  .aggregate(coreModule, rxJavaModule, scalaModule)
+  .aggregate(coreModule, rxJavaModule)
 
 lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
   <licenses>
