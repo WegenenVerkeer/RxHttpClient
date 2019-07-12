@@ -1,6 +1,6 @@
 val Organization = "be.wegenenverkeer"
 
-val Version = "1.1.1-SNAPSHOT"
+val Version = "1.2.0"
 
 val ScalaVersion = "2.12.8"
 
