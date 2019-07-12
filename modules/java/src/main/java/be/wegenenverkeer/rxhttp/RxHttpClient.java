@@ -139,11 +139,7 @@ public class RxHttpClient {
      * @see Observable#defer
      */
     public Observable<String> executeAndDechunk(ClientRequest request, String separator) {
-        return Observable.defer(() -> {
-            BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
-            innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
-            return subject;
-        }).lift(new Dechunker(separator, false, UTF8));
+        return executeObservably(request).lift(new Dechunker(separator, false, UTF8));
     }
 
     /**
@@ -162,11 +158,7 @@ public class RxHttpClient {
      * @see Observable#defer
      */
     public Observable<String> executeAndDechunk(ClientRequest request, String separator, Charset charset) {
-        return Observable.defer(() -> {
-            BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
-            innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
-            return subject;
-        }).lift(new Dechunker(separator, false, charset));
+        return executeObservably(request).lift(new Dechunker(separator, false, charset));
     }
 
 
@@ -183,17 +175,13 @@ public class RxHttpClient {
      * @see Observable#defer
      */
     public <F> Observable<F> executeObservably(ClientRequest request, Function<byte[], F> transform) {
-        return Observable.defer(() -> {
-            BehaviorSubject<ServerResponseElement> subject = BehaviorSubject.create();
-            innerClient.executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
-            return subject
+        return executeObservably(request)
                     .filter(el -> el.match(e -> false, e -> false, e -> true, e -> true))
                     .map(el -> el.match(
                             e -> null, //won't happen, is filtered
                             e -> null, //won't happen, is filtered
                             e -> transform.apply(e.getBodyPartBytes()),
                             e -> transform.apply(e.getResponseBodyAsBytes())));
-        });
     }
 
     /**
