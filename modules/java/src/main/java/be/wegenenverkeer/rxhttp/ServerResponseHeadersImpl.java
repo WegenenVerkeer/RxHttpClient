@@ -9,11 +9,11 @@ import java.util.*;
  * <p>
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
-class ServerResponseHeadersBase implements ServerResponseHeaders {
+class ServerResponseHeadersImpl implements ServerResponseHeaders {
 
     Map<String, List<String>> headers = new HashMap<>();
 
-    public ServerResponseHeadersBase(HttpHeaders rh) {
+    public ServerResponseHeadersImpl(HttpHeaders rh) {
         if (rh != null) {
             headers = CompatUtilities.headersToMap(rh);
         }

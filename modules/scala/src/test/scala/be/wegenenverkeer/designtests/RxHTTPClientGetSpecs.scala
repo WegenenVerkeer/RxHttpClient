@@ -1,18 +1,18 @@
 package be.wegenenverkeer.designtests
 
 
-import be.wegenenverkeer.rxhttp.{ServerResponse, ClientRequest, RxHttpClient}
+import be.wegenenverkeer.rxhttp.scala.ImplicitConversions._
+import be.wegenenverkeer.rxhttp.{ClientRequest, RxHttpClient, ServerResponse}
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
-
+import com.github.tomakehurst.wiremock.core.Options
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import org.specs2.mutable.{Before, After, Specification}
-import org.specs2.time.NoTimeConversions
+import org.specs2.mutable.{After, Specification}
 import rx.lang.scala.Observable
+import rx.lang.scala.observers.TestSubscriber
+import rx.observers.TestObserver
 
 import scala.concurrent.{Await, Future}
-
-import be.wegenenverkeer.rxhttp.scala.ImplicitConversions._
 
 
 
@@ -23,6 +23,7 @@ import be.wegenenverkeer.rxhttp.scala.ImplicitConversions._
 
 class RxHTTPClientGetSpecs extends Specification {
 
+    import scala.concurrent.duration._
     sequential
 
     "The GET request " should {
@@ -30,7 +31,7 @@ class RxHTTPClientGetSpecs extends Specification {
       "return scala Observable with executeObservably" in new UsingMockServer {
         val expectBody: String = "{ 'contacts': [1,2,3] }"
 
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
           .withQueryParam("q", com.github.tomakehurst.wiremock.client.WireMock.equalTo("test"))
           .withHeader("Accept", com.github.tomakehurst.wiremock.client.WireMock.equalTo("application/json"))
           .willReturn(aResponse.withFixedDelay(REQUEST_TIME_OUT / 3)
@@ -57,11 +58,11 @@ class RxHTTPClientGetSpecs extends Specification {
       "return scala Future with execute" in new UsingMockServer {
 
 
-        import scala.concurrent.duration._
+
 
         val expectBody: String = "{ 'contacts': [1,2,3] }"
 
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
           .withQueryParam("q", com.github.tomakehurst.wiremock.client.WireMock.equalTo("test"))
           .withHeader("Accept", com.github.tomakehurst.wiremock.client.WireMock.equalTo("application/json"))
           .willReturn(aResponse.withFixedDelay(20)
@@ -84,12 +85,9 @@ class RxHTTPClientGetSpecs extends Specification {
 
       "return scala Future with executeCompletely" in new UsingMockServer {
 
-
-        import scala.concurrent.duration._
-
         val expectBody: String = "{ 'contacts': [1,2,3] }"
 
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
           .withQueryParam("q", com.github.tomakehurst.wiremock.client.WireMock.equalTo("test"))
           .withHeader("Accept", com.github.tomakehurst.wiremock.client.WireMock.equalTo("application/json"))
           .willReturn(aResponse.withFixedDelay(20)
@@ -112,7 +110,28 @@ class RxHTTPClientGetSpecs extends Specification {
 
         response must beSome(expectBody)
       }
+
+      "return delimited evens (Strings)" in new UsingMockServer {
+        stubFor(get(urlPathEqualTo("/sse"))
+          .willReturn(
+            aResponse
+              .withBodyFile("sse-output.txt")
+              .withChunkedDribbleDelay(50, 30)))
+
+        val request: ClientRequest = client.requestBuilder.setMethod("GET").setUrlRelativetoBase("/sse").build
+
+        val observable = client.executeAndDechunk(request, "\n")
+
+        val testSub = TestSubscriber[String]
+        observable.subscribe(testSub)
+
+        testSub.awaitTerminalEvent(1.seconds)
+
+        testSub.getOnNextEvents.size must beEqualTo(10)
+
+      }
     }
+
 }
 
 
@@ -134,7 +153,7 @@ trait UsingMockServer extends After  {
 
   import com.github.tomakehurst.wiremock.client.WireMock._
 
-  val server = new WireMockServer(wireMockConfig.port(port))
+  val server = new WireMockServer(wireMockConfig.port(port).useChunkedTransferEncoding(Options.ChunkedEncodingPolicy.BODY_FILE))
   server.start()
 
   configureFor("localhost", port)

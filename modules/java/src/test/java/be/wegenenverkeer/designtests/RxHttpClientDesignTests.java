@@ -27,7 +27,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
     public void GETHappyPath() throws InterruptedException {
         //set up stub
         String expectBody = "{ 'contacts': [1,2,3] }";
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
                 .willReturn(aResponse().withFixedDelay(200)
@@ -67,7 +67,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         //set up stub
         String expectBody = "{ 'contacts': 'žẽūș' }"; // with chars only available in UTF-8
 
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
                 .willReturn(aResponse().withFixedDelay(200)
@@ -105,7 +105,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         //set up stub
         String expectBody = "{ 'contacts': 'žẽūș' }"; // with chars only available in UTF-8
 
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
                 .willReturn(aResponse().withFixedDelay(200)
@@ -144,7 +144,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
     public void GETHappyPathWithFuture() throws InterruptedException, TimeoutException, ExecutionException {
         //set up stub
         String expectBody = "{ 'contacts': [1,2,3] }";
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
                 .willReturn(aResponse().withFixedDelay(200)
@@ -168,7 +168,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
 
     @Test
     public void testHttp4xxResponseOnGET() throws InterruptedException {
-        //no stub set-up so we always get a 404 response.
+        stubFor(get(urlPathEqualTo("/contacts")).willReturn(aResponse().withStatus(404)));
 
         //set up use case
         String path = "/contacts";

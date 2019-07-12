@@ -16,13 +16,13 @@ import static org.junit.Assert.*;
  * Supports the same set of tests as {@link RxHttpClientDesignTests}, but uses the executeObservably(ServerRequest) method.
  * * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
-public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock{
+public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock {
 
     @Test
     public void GETHappyPath() throws InterruptedException {
         //set up stub
         String expectBody = "{ 'contacts': [1,2,3] }";
-        stubFor(get(urlPathEqualTo("/contacts?q=test"))
+        stubFor(get(urlPathEqualTo("/contacts"))
                 .withQueryParam("q", equalTo("test"))
                 .withHeader("Accept", equalTo("application/json"))
                 .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT / 3)
@@ -53,7 +53,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock{
             } else if (el instanceof ServerResponseBodyPart) {
                 assertEquals(expectBody, new String(((ServerResponseBodyPart) el).getBodyPartBytes()));
             } else if (el instanceof ServerResponseHeaders) {
-                assertEquals("application/json", ((ServerResponseHeaders)el).getContentType().get() );
+                assertEquals("application/json", ((ServerResponseHeaders) el).getContentType().get());
             } else {
                 fail("Unknown Server Response element: " + el.getClass().getCanonicalName());
             }
@@ -64,7 +64,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock{
 
     @Test
     public void testHttp4xxResponseOnGET() throws InterruptedException {
-        //no stub set-up so we always get a 404 response.
+        stubFor(get(urlPathEqualTo("/contacts")).willReturn(aResponse().withStatus(404)));
 
         //set up use case
         String path = "/contacts";

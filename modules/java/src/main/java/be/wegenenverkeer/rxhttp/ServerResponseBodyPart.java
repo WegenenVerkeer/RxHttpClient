@@ -13,7 +13,13 @@ public interface ServerResponseBodyPart extends ServerResponseElement {
      * Returns the bytes of the response body.
      * @return the bytes of the response body.
      */
-    public abstract byte[] getBodyPartBytes();
+    byte[] getBodyPartBytes();
+
+    boolean isLast();
+
+    default boolean isEmpty() {
+        return getBodyPartBytes().length == 0;
+    }
 
     /**
      * {@inheritDoc}

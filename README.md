@@ -89,9 +89,12 @@ REST Requests can be created using `ClientRequestBuilders` which in turn can be 
  `ServerResponse` to a value of type `F`. The returned `Observable` emits exactly one `F` before completing. In case of an error, it 
     emits either an `HttpClientError` or `HttpServerError`. 
  + `execute(ClientRequest,  Function<ServerResponse, F>)` returns a `CompletableFuture<F>` with the response after being decoded by the function in the argument
- + `executeOservably(ClientRequest, Function<byte[], F>)` returns an `Observable<F>` which returns an `F` for each HTTP response part or chunk received. This
+ + `executeOservably(ClientRequest, Function<byte[], F>)` returns an `Observable<F>` that emits an `F` for each HTTP response part or chunk received. This
   is especially useful for processing HTTP responses that use chunked transfer encoding. Each chunk will be transformed to a value of `F` and 
-  directly emitted by the Observable.
+  directly emitted by the Observable. Notice that there is no guarantee that the received chunks correspond exactly to the chunks as transmitted. 
+  + `executeAndDechunk(ClientRequest, String)` returns an `Observable<String>` that emits a String whenever a separator String is observed 
+  in the received chunks. This is especially useful when chunked transfer encoding is used for server sent events (SSE) or other streaming 
+  data.  
 
 All Observables returned by these methods are "Cold" Observables. This means that the `ClientRequest` is executed only when some Observer subscribes 
 to the Observable. In fact, whenever an Observer subscribes to the Observable, the request is executed.
