@@ -22,7 +22,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 abstract public class UsingWireMock {
 
 
-    static final int REQUEST_TIME_OUT = 500;
+    static final int REQUEST_TIME_OUT = 5000;
     static final int DEFAULT_TIME_OUT = REQUEST_TIME_OUT * 5;
 
     static int port = 8089;
