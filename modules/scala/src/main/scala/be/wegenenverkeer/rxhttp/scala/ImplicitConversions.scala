@@ -1,12 +1,13 @@
 package be.wegenenverkeer.rxhttp.scala
 
+import java.nio.charset.Charset
 import java.util.concurrent.CompletionStage
 import java.util.function.BiConsumer
 
-import be.wegenenverkeer.rxhttp.{ServerResponse, ServerResponseElement, ClientRequest, RxHttpClient => JRxHttpClient}
+import be.wegenenverkeer.rxhttp.{ClientRequest, ServerResponse, ServerResponseElement, RxHttpClient => JRxHttpClient}
 import rx.lang.scala.Observable
 
-import scala.concurrent.{Promise, Future}
+import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 
@@ -45,6 +46,9 @@ class RxHttpClient(val inner: JRxHttpClient) {
 
   def executeToCompletion[T](req: ClientRequest, transform: Function[ServerResponse,T]): Observable[T] =
     toScalaObservable(inner.executeToCompletion(req, toJavaFunction(transform)))
+
+  def executeAndDechunk[String](req: ClientRequest, separator: String, charset : Charset = Charset.forName("UTF8")): Observable[String] =
+    toScalaObservable(inner.executeAndDechunk(req, separator.asInstanceOf[java.lang.String], charset)).map( _ .asInstanceOf[String])
 
 }
 
