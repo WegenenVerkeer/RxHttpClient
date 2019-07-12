@@ -1,6 +1,7 @@
 package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.rxhttp.RxHttpClient;
+import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.Options;
@@ -27,7 +28,7 @@ abstract public class UsingWireMock {
 
     static int port = 8089;
 
-    static RxHttpClient client;
+    static RxJavaHttpClient client;
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().port(port).useChunkedTransferEncoding(Options.ChunkedEncodingPolicy.BODY_FILE));
@@ -35,18 +36,12 @@ abstract public class UsingWireMock {
     @BeforeClass
     public static void setUpAndStartServer() {
 
-        client = new RxHttpClient.Builder()
+        client = new RxJavaHttpClient.Builder()
                 .setRequestTimeout(REQUEST_TIME_OUT)
                 .setMaxConnections(3)
                 .setAccept("application/json")
                 .setBaseUrl("http://localhost:" + port)
                 .build();
     }
-
-    @SuppressWarnings("unchecked")
-    public <V> List<V> items(V... v) {
-        return Arrays.asList(v);
-    }
-
 
 }

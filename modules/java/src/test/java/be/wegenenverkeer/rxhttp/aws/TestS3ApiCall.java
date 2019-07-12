@@ -3,13 +3,14 @@ package be.wegenenverkeer.rxhttp.aws;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.RxHttpClient;
 import be.wegenenverkeer.rxhttp.ServerResponse;
+import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.subscribers.TestSubscriber;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -22,7 +23,7 @@ public class TestS3ApiCall {
     public void testS3ApiCall(){
 
         AwsCredentialsProvider provider = new EnvironmentCredentialsProvider();
-        RxHttpClient client = new RxHttpClient.Builder()
+        RxJavaHttpClient client = new RxJavaHttpClient.Builder()
                 .setRequestTimeout(6000)
                 .setMaxConnections(3)
                 .setAwsEndPoint(AwsService.S3, AwsRegion.EU_WEST)
@@ -37,9 +38,9 @@ public class TestS3ApiCall {
                 .addHeader("x-amz-content-sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
                 .build();
 
-        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-        TestObserver<String> sub = new TestObserver<>();
+        TestSubscriber<String> sub = new TestSubscriber<>();
         observable.subscribe(sub);
 
         sub.awaitDone(6000, TimeUnit.MILLISECONDS);

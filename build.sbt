@@ -35,9 +35,13 @@ val commonDependencies = Seq(
   slf4j,
   rx,
   rxFlow,
-  rxJava,
+
   commonsCodec,
   json
+)
+
+val rxJavaDependencies = Seq(
+  rxJava
 )
 
 val javaDependencies = commonDependencies ++ Seq(slf4jSimple, junitInterface)
@@ -84,27 +88,34 @@ lazy val testSettings = Seq(
   libraryDependencies ++= mainTestDependencies,
   parallelExecution in Test := false
 )
-
-lazy val javaModule = (project in file("modules/java")).settings(
-  name := "RxHttpClient-java",
+lazy val coreModule = (project in file("modules/core")).settings(
+  name := "RxHttpClient-Base",
   moduleSettings,
   javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies,
   extraJavaSettings
 )
 
+lazy val rxJavaModule = (project in file("modules/java")).settings(
+  name := "RxHttpClient-RxJava",
+  moduleSettings,
+  javacOptions ++= Seq("--release", "11"),
+  libraryDependencies ++= javaDependencies ++ rxJavaDependencies,
+  extraJavaSettings
+) dependsOn coreModule
+
 lazy val scalaModule = (project in file("modules/scala")).settings(
   name := "RxHttpClient-scala",
   moduleSettings,
   libraryDependencies ++= scalaDependencies
-) dependsOn javaModule
+) dependsOn coreModule
 
 lazy val main = (project in file("."))
   .settings(
     moduleSettings ++ disablePublishingRoot,
     name := "RxHttpClient"
   )
-  .aggregate(javaModule, scalaModule)
+  .aggregate(coreModule, rxJavaModule, scalaModule)
 
 lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
   <licenses>

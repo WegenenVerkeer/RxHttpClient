@@ -3,8 +3,10 @@ package be.wegenenverkeer.designtests;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.ServerResponse;
 import com.jayway.jsonpath.JsonPath;
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.subscribers.TestSubscriber;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +56,7 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
                 .addQueryParam("q", "test")
                 .build();
 
-        Function<String, Observable<String>> followLink  = (String contactUrl) -> {
+        Function<String, Flowable<String>> followLink  = (String contactUrl) -> {
             LOGGER.info("Following contactURL:" + contactUrl);
             ClientRequest followUp = client.requestBuilder()
                     .setMethod("GET")
@@ -68,17 +70,17 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
 
         //Here we use concatMap rather than flatMap because this serializes the requests such that requests are
         //made one after the other, and not interleaved. See: http://reactivex.io/documentation/operators/flatmap.html
-        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody)
+        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody)
                 .flatMap(body -> {
                     List<String> l = JsonPath.read(body, "$.contacts");
                     LOGGER.info("Retrieved contact list");
-                    return Observable.fromIterable(l);
+                    return Flowable.fromIterable(l);
                 }).concatMap(followLink::apply);
 
         LOGGER.info("Observable created");
 
         //verify behaviour
-        TestObserver<String> sub = new TestObserver<>();
+        TestSubscriber<String> sub = new TestSubscriber<>();
 
         LOGGER.info("Subscribing to Observer");
         observable.subscribe(sub);

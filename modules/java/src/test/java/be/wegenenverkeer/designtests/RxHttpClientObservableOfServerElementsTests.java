@@ -1,8 +1,10 @@
 package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.rxhttp.*;
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.subscribers.TestSubscriber;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -41,10 +43,10 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock {
                 //.addQueryParam("q", "test")
                 .build();
 
-        Observable<ServerResponseElement> observable = client.executeObservably(request);
+        Flowable<ServerResponseElement> observable = client.executeObservably(request);
 
 
-        TestObserver<ServerResponseElement> sub = new TestObserver<>();
+        TestSubscriber<ServerResponseElement> sub = new TestSubscriber<>();
         observable.subscribe(sub);
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.HOURS);
@@ -77,10 +79,10 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock {
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<ServerResponseElement> observable = client.executeObservably(request);
+        Flowable<ServerResponseElement> observable = client.executeObservably(request);
 
 
-        TestObserver<ServerResponseElement> testsubscriber = new TestObserver<>();
+        TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
         testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
@@ -109,10 +111,10 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock {
                 .build();
 
 
-        Observable<ServerResponseElement> observable = client.executeObservably(request);
+        Flowable<ServerResponseElement> observable = client.executeObservably(request);
 
 
-        TestObserver<ServerResponseElement> testsubscriber = new TestObserver<>();
+        TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
         testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
@@ -138,10 +140,10 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock {
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Observable<ServerResponseElement> observable = client.executeObservably(request);
+        Flowable<ServerResponseElement> observable = client.executeObservably(request);
 
 
-        TestObserver<ServerResponseElement> testsubscriber = new TestObserver<>();
+        TestSubscriber<ServerResponseElement> testsubscriber = new TestSubscriber<>();
         observable.subscribe(testsubscriber);
 
         testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);

@@ -4,9 +4,6 @@ import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.ClientRequestBuilder;
 import be.wegenenverkeer.rxhttp.RxHttpClient;
 
-import java.util.List;
-import java.util.Map;
-
 /**
  * A Test case in the AWS Request Signing Test Suite
  * Created by Karel Maesen, Geovise BVBA on 06/06/16.

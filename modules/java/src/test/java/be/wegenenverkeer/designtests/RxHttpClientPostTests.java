@@ -3,8 +3,10 @@ package be.wegenenverkeer.designtests;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.HttpClientError;
 import be.wegenenverkeer.rxhttp.ServerResponse;
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.subscribers.TestSubscriber;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -46,7 +48,7 @@ public class RxHttpClientPostTests extends UsingWireMock {
                 .setUrlRelativetoBase(path)
                 .build();
 
-        Observable<String> observable =
+        Flowable<String> observable =
                 client.executeToCompletion(request, resp -> resp.getHeader("Location").get())
                         .flatMap(url ->
                                 client.executeToCompletion(
@@ -56,7 +58,7 @@ public class RxHttpClientPostTests extends UsingWireMock {
                         );
 
 
-        TestObserver<String> sub = new TestObserver<>();
+        TestSubscriber<String> sub = new TestSubscriber<>();
         observable.subscribe(sub);
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
@@ -84,9 +86,9 @@ public class RxHttpClientPostTests extends UsingWireMock {
                 .setUrlRelativetoBase(path)
                 .build();
 
-        Observable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-        TestObserver<String> sub = new TestObserver<>();
+        TestSubscriber<String> sub = new TestSubscriber<>();
         observable.subscribe(sub);
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);

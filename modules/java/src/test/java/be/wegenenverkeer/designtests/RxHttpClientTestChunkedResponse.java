@@ -2,11 +2,8 @@ package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import io.reactivex.observers.TestObserver;
 import io.reactivex.subscribers.TestSubscriber;
 import org.junit.Test;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;

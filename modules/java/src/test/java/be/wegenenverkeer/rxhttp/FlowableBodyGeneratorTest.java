@@ -1,6 +1,7 @@
 package be.wegenenverkeer.rxhttp;
 
 
+import be.wegenenverkeer.rxhttp.rxjava.FlowableBodyGenerator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.reactivex.Flowable;
