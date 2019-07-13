@@ -46,21 +46,12 @@ public class RxHttpClientDesignTests extends UsingWireMock{
                 .addQueryParam("q", "test")
                 .build();
 
-        Flowable<String> observable = client.executeObservably(request, bytes -> new String(bytes, Charset.forName("UTF8")));
-
-
-//        String out = observable.blockingFirst();
-//
-        TestSubscriber<String> sub = new TestSubscriber<>();
-        observable.subscribe(sub);
+        Flowable<String> flowable = client.executeObservably(request, bytes -> new String(bytes, Charset.forName("UTF8")));
+        TestSubscriber<String> sub = flowable.test();
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
-
         sub.assertValues(expectBody);
-        
-
-
     }
 
     @Test
@@ -83,19 +74,12 @@ public class RxHttpClientDesignTests extends UsingWireMock{
                 .addQueryParam("q", "test")
                 .build();
 
-        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
-
-
-        TestSubscriber<String> sub = new TestSubscriber<>();
-        observable.subscribe(sub);
+        Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        TestSubscriber<String> sub = flowable.test();
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
-
         sub.assertValues(expectBody);
-
-
-
     }
 
     /**
@@ -123,15 +107,12 @@ public class RxHttpClientDesignTests extends UsingWireMock{
                 .addQueryParam("q", "test")
                 .build();
 
-        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
 
-        TestSubscriber<String> sub = new TestSubscriber<>();
-        observable.subscribe(sub);
-
+        TestSubscriber<String> sub = flowable.test();
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
-
         sub.assertValues(expectBody);
     }
 
@@ -160,12 +141,8 @@ public class RxHttpClientDesignTests extends UsingWireMock{
                 .addQueryParam("q", "test")
                 .build();
 
-        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
-
-
-        TestSubscriber<String> sub = new TestSubscriber<>();
-        observable.subscribe(sub);
-
+        Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        TestSubscriber<String> sub = flowable.test();
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
 
@@ -212,13 +189,11 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-        TestSubscriber<String> sub = new TestSubscriber<>();
-        observable.subscribe(sub);
+        TestSubscriber<String> sub = flowable.test();
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
-
         sub.assertError( t -> {
             if(t instanceof HttpClientError) {
                 return ((HttpClientError)t).getStatusCode() == 404;
@@ -242,9 +217,8 @@ public class RxHttpClientDesignTests extends UsingWireMock{
                 .setUrlRelativetoBase(path)
                 .build();
 
-        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
-        TestSubscriber<String> testsubscriber = new TestSubscriber<>();
-        observable.subscribe(testsubscriber);
+        Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        TestSubscriber<String> testsubscriber = flowable.test();
 
         testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
 
@@ -277,10 +251,9 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         //set up use case
         String path = "/contacts";
         ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase(path).build();
-        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-        TestSubscriber<String> testsubscriber = new TestSubscriber<>();
-        observable.subscribe(testsubscriber);
+        TestSubscriber<String> testsubscriber = flowable.test();
 
         testsubscriber.awaitDone(1000, TimeUnit.MILLISECONDS);
 

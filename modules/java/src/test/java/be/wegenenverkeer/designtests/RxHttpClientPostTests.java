@@ -48,7 +48,7 @@ public class RxHttpClientPostTests extends UsingWireMock {
                 .setUrlRelativetoBase(path)
                 .build();
 
-        Flowable<String> observable =
+        Flowable<String> flowable =
                 client.executeToCompletion(request, resp -> resp.getHeader("Location").get())
                         .flatMap(url ->
                                 client.executeToCompletion(
@@ -58,8 +58,7 @@ public class RxHttpClientPostTests extends UsingWireMock {
                         );
 
 
-        TestSubscriber<String> sub = new TestSubscriber<>();
-        observable.subscribe(sub);
+        TestSubscriber<String> sub = flowable.test();
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
@@ -86,10 +85,9 @@ public class RxHttpClientPostTests extends UsingWireMock {
                 .setUrlRelativetoBase(path)
                 .build();
 
-        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody);
+        Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
 
-        TestSubscriber<String> sub = new TestSubscriber<>();
-        observable.subscribe(sub);
+        TestSubscriber<String> sub = flowable.test();
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
 

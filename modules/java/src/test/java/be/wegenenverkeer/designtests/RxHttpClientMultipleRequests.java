@@ -6,6 +6,7 @@ import com.jayway.jsonpath.JsonPath;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subscribers.TestSubscriber;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static java.lang.String.format;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 27/11/15.
@@ -66,24 +68,22 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
                     .doAfterTerminate(() -> LOGGER.info("ContactUrl " + contactUrl + " retrieved"));
         };
 
-        LOGGER.info("Creating Observable...");
-
         //Here we use concatMap rather than flatMap because this serializes the requests such that requests are
         //made one after the other, and not interleaved. See: http://reactivex.io/documentation/operators/flatmap.html
-        Flowable<String> observable = client.executeToCompletion(request, ServerResponse::getResponseBody)
+        Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody)
                 .flatMap(body -> {
                     List<String> l = JsonPath.read(body, "$.contacts");
                     LOGGER.info("Retrieved contact list");
                     return Flowable.fromIterable(l);
                 }).concatMap(followLink::apply);
+        // or use .flatMap(followLink::apply, client.getMaxConnections())
+        //this will also limit the number of concurrent class to the same number (provided no
+        // other threads initiate requests using the same client)
 
         LOGGER.info("Observable created");
 
         //verify behaviour
-        TestSubscriber<String> sub = new TestSubscriber<>();
-
-        LOGGER.info("Subscribing to Observer");
-        observable.subscribe(sub);
+        TestSubscriber<String> sub = flowable.test();
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
 

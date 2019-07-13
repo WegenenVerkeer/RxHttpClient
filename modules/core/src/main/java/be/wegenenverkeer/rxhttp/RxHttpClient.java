@@ -84,4 +84,6 @@ public interface RxHttpClient {
     String toLogMessage(ClientRequest request);
 
     AsyncHttpClient inner();
+
+    int getMaxConnections();
 }

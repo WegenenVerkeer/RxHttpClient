@@ -126,6 +126,8 @@ public abstract class BaseRxHttpClient implements RxHttpClient {
         return this.innerClient;
     }
 
-
-
+    @Override
+    public int getMaxConnections() {
+        return this.innerClient.getConfig().getMaxConnections();
+    }
 }

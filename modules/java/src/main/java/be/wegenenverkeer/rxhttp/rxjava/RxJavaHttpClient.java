@@ -3,6 +3,7 @@ package be.wegenenverkeer.rxhttp.rxjava;
 import be.wegenenverkeer.rxhttp.*;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.processors.AsyncProcessor;
 import io.reactivex.processors.BehaviorProcessor;
 import org.asynchttpclient.AsyncHttpClient;

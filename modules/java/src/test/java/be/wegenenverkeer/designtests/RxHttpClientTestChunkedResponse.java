@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests that demonstrate processing a long and slow chunked response.
@@ -37,9 +38,9 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMock{
                 .setUrlRelativetoBase("/sse")
                 .build();
 
-        Flowable<String> observable = client.executeAndDechunk(request, "\n");
-        TestSubscriber<String> subscriber = new TestSubscriber<>();
-        observable.subscribe(subscriber);
+        Flowable<String> flowable = client.executeAndDechunk(request, "\n");
+
+        TestSubscriber<String> subscriber = flowable.test();
         subscriber.awaitDone(120, TimeUnit.MILLISECONDS);
 
         subscriber.assertValueCount(10);
@@ -63,14 +64,15 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMock{
                 .setMethod("GET")
                 .setUrlRelativetoBase("/sse")
                 .build();
-        Flowable<String> observable = client.executeAndDechunk(request, "\n");
+        Flowable<String> flowable = client.executeAndDechunk(request, "\n");
 
-        TestSubscriber<String> subscriber = new TestSubscriber<>();
-        observable.subscribe(subscriber);
+        TestSubscriber<String> subscriber = flowable.test();
 
         Thread.sleep(50);
         subscriber.cancel();
+        assertTrue(subscriber.isCancelled());
         subscriber.assertValueCount(0);
+
 
     }
 
