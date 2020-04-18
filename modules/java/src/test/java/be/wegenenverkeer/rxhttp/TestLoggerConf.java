@@ -15,7 +15,7 @@ public class TestLoggerConf {
     private RxHttpClient client = null;
 
     @Test
-    public void testLoggerConfDefault(){
+    public void testLoggerConfDefault() {
         client = new RxJavaHttpClient.Builder().setBaseUrl("http://foo.com").build();
         try {
             ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase("/test").build();
@@ -26,7 +26,7 @@ public class TestLoggerConf {
     }
 
     @Test
-    public void testLoggerConfWithHeader(){
+    public void testLoggerConfWithHeader() {
         client = new RxJavaHttpClient.Builder()
                 .setBaseUrl("http://foo.com")
                 .logHeaders(Arrays.asList("Test-Header"))
@@ -45,7 +45,7 @@ public class TestLoggerConf {
     }
 
     @Test
-    public void testLoggerConfWithHeaderIsCaseInsentivie(){
+    public void testLoggerConfWithHeaderIsCaseInsentivie() {
         client = new RxJavaHttpClient.Builder()
                 .setBaseUrl("http://foo.com")
                 .logHeaders(Arrays.asList("Test-Header"))
@@ -64,7 +64,7 @@ public class TestLoggerConf {
     }
 
     @Test
-    public void testLoggerConfWithFParamIsCaseInsensitive(){
+    public void testLoggerConfWithFParamIsCaseInsensitive() {
         client = new RxJavaHttpClient.Builder()
                 .setBaseUrl("http://foo.com")
                 .logFormParams(Arrays.asList("TestParam"))
@@ -84,7 +84,7 @@ public class TestLoggerConf {
     }
 
     @Test
-    public void testLoggerConfWithFormParam(){
+    public void testLoggerConfWithFormParam() {
         client = new RxJavaHttpClient.Builder()
                 .setBaseUrl("http://foo.com")
                 .logFormParams(Arrays.asList("TestParam"))

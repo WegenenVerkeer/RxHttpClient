@@ -1,7 +1,6 @@
 package be.wegenenverkeer.rxhttp.aws;
 
 import be.wegenenverkeer.rxhttp.ClientRequest;
-import be.wegenenverkeer.rxhttp.RxHttpClient;
 import be.wegenenverkeer.rxhttp.ServerResponse;
 import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
 import io.reactivex.rxjava3.core.Flowable;
@@ -18,7 +17,7 @@ public class TestS3ApiCall {
 
     @Ignore("Only run when we have correct environment set up")
     @Test
-    public void testS3ApiCall(){
+    public void testS3ApiCall() {
 
         AwsCredentialsProvider provider = new EnvironmentCredentialsProvider();
         RxJavaHttpClient client = new RxJavaHttpClient.Builder()

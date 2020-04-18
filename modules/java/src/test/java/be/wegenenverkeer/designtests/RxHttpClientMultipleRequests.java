@@ -14,12 +14,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static java.lang.String.format;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 27/11/15.
  */
-public class RxHttpClientMultipleRequests extends UsingWireMock{
+public class RxHttpClientMultipleRequests extends UsingWireMock {
 
     private static Logger LOGGER = LoggerFactory.getLogger(RxHttpClientMultipleRequests.class);
 
@@ -43,9 +42,7 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
         stubFor(get(urlPathEqualTo("/contacts/7")).withHeader("Accept", equalTo("application/json")).willReturn(aResponse().withStatus(200).withBody("SEVEN")));
 
 
-
         //use case
-
 
 
         String path = "/contacts";
@@ -55,7 +52,7 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
                 .addQueryParam("q", "test")
                 .build();
 
-        Function<String, Flowable<String>> followLink  = (String contactUrl) -> {
+        Function<String, Flowable<String>> followLink = (String contactUrl) -> {
             LOGGER.info("Following contactURL:" + contactUrl);
             ClientRequest followUp = client.requestBuilder()
                     .setMethod("GET")
@@ -88,7 +85,6 @@ public class RxHttpClientMultipleRequests extends UsingWireMock{
         sub.assertValues("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN");
 
     }
-
 
 
 }

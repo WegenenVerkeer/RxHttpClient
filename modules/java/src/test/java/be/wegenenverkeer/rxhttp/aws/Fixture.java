@@ -4,23 +4,22 @@ import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 
 /**
  * AWS Request signing test suite fixture
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 09/06/16.
  */
 class Fixture {
 
 
     static Aws4TestSuite testSuite;
+    static String dateStamp = "20110909T233600Z";
     static private File sourceDirectory;
     static private AwsCredentialsProvider provider = new ConstantAwsCredentialProvider("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY");
-    static String dateStamp = "20110909T233600Z";
 
     static {
         URL url = Thread.currentThread().getContextClassLoader().getResource("aws4_testsuite");
@@ -33,10 +32,10 @@ class Fixture {
     }
 
     static AwsSignature4Signer signer(boolean doubleEncode) {
-        return new AwsSignature4Signer( AwsServiceEndPoint.defaultFor(AwsService.HOST, AwsRegion.US_EAST), provider, doubleEncode);
+        return new AwsSignature4Signer(AwsServiceEndPoint.defaultFor(AwsService.HOST, AwsRegion.US_EAST), provider, doubleEncode);
     }
 
-    public static Aws4TestSuite testSuite(){
+    public static Aws4TestSuite testSuite() {
         return testSuite;
     }
 
@@ -60,7 +59,7 @@ class Fixture {
     static private String getExpected(String name, String ext) {
         File creq = new File(sourceDirectory, name + ext);
         CharSource cs = Files.asCharSource(creq, Charset.forName("UTF-8"));
-        try{
+        try {
             return cs.read().replaceAll("\\r", "");
         } catch (IOException e) {
             e.printStackTrace();

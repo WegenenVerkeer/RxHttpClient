@@ -23,7 +23,7 @@ import static org.junit.Assert.fail;
  * Behavior Unit test
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
-public class RxHttpClientDesignTests extends UsingWireMock{
+public class RxHttpClientDesignTests extends UsingWireMock {
 
 
     @Test
@@ -150,7 +150,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
             sub.assertValues(expectBody);
             fail("Expecting wrongly parsed body");
         } catch (AssertionError exp) {
-             // failure expected
+            // failure expected
         }
 
 
@@ -194,16 +194,16 @@ public class RxHttpClientDesignTests extends UsingWireMock{
         TestSubscriber<String> sub = flowable.test();
 
         sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
-        sub.assertError( t -> {
-            if(t instanceof HttpClientError) {
-                return ((HttpClientError)t).getStatusCode() == 404;
+        sub.assertError(t -> {
+            if (t instanceof HttpClientError) {
+                return ((HttpClientError) t).getStatusCode() == 404;
             }
             return false;
         });
     }
 
     @Test
-    public void testHttp5xxResponseOnGET(){
+    public void testHttp5xxResponseOnGET() {
         //set up stub
         stubFor(get(urlEqualTo("/contacts"))
                 .withHeader("Accept", equalTo("application/json"))
@@ -222,9 +222,9 @@ public class RxHttpClientDesignTests extends UsingWireMock{
 
         testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
 
-        testsubscriber.assertError( t -> {
-            if(t instanceof HttpServerError) {
-                return ((HttpServerError)t).getStatusCode() == 500;
+        testsubscriber.assertError(t -> {
+            if (t instanceof HttpServerError) {
+                return ((HttpServerError) t).getStatusCode() == 500;
             }
             return false;
         });
@@ -233,7 +233,7 @@ public class RxHttpClientDesignTests extends UsingWireMock{
 
 
     @Test
-    public void testConnectionTimeOut(){
+    public void testConnectionTimeOut() {
         //set up stub
         stubFor(get(urlEqualTo("/contacts"))
                 .withHeader("Accept", equalTo("application/json"))

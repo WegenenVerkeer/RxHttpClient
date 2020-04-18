@@ -19,18 +19,18 @@ import static org.junit.Assert.*;
 public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock {
 
     @Test
-    public void GETHappyPath(){
+    public void GETHappyPath() {
         //set up stub
         String expectBody = "{ 'contacts': [1,2,3] }";
         stubFor(get(urlPathEqualTo("/contacts"))
-                //.withQueryParam("q", equalTo("test"))
-                .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
+                        //.withQueryParam("q", equalTo("test"))
+                        .withHeader("Accept", equalTo("application/json"))
+                        .willReturn(aResponse()
+                                        .withStatus(200)
+                                        .withHeader("Content-Type", "application/json")
 //                        .withBodyFile("sse-output.txt")
-                        .withBody(expectBody)
-                )
+                                        .withBody(expectBody)
+                        )
         );
 
         //set up use case
@@ -51,7 +51,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock {
         sub.assertComplete();
 
         //we must receive at least 1 body part
-        assertTrue( sub.values().stream().filter(t -> t instanceof ServerResponseBodyPart).count() > 0);
+        assertTrue(sub.values().stream().filter(t -> t instanceof ServerResponseBodyPart).count() > 0);
 
         for (ServerResponseElement el : sub.values()) {
             if (el instanceof ServerResponseStatus) {
@@ -141,7 +141,6 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock {
         testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
 
         testsubscriber.assertError(TimeoutException.class);
-
 
 
     }

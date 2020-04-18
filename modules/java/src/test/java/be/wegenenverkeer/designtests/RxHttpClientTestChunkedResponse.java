@@ -12,24 +12,24 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Tests that demonstrate processing a long and slow chunked response.
- *
+ * <p>
  * Notice that these tests require running the node server.js test server.That is why they are checked-in as @ignored
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
 
-public class RxHttpClientTestChunkedResponse extends UsingWireMock{
+public class RxHttpClientTestChunkedResponse extends UsingWireMock {
 
 
     @Test
-    public void testChunkedTransfer(){
+    public void testChunkedTransfer() {
         stubFor(
                 get(urlPathEqualTo("/sse"))
                         .willReturn(aResponse()
-                        .withBodyFile("sse-output.txt")
-                        .withChunkedDribbleDelay(50, 30)
+                                .withBodyFile("sse-output.txt")
+                                .withChunkedDribbleDelay(50, 30)
                         )
-                );
+        );
 
         ClientRequest request = client.requestBuilder()
                 .setMethod("GET")
@@ -44,8 +44,6 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMock{
         subscriber.assertValueCount(10);
 
     }
-
-
 
 
     @Test

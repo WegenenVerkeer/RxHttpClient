@@ -15,6 +15,11 @@ class Aws4TestCase {
     private ClientRequestBuilder builder;
     private ClientRequest request;
 
+    Aws4TestCase(RxHttpClient client) {
+        this.client = client;
+        this.builder = client.requestBuilder();
+    }
+
     ClientRequest getRequest() {
         if (this.request == null) {
             this.request = builder.build();
@@ -22,24 +27,13 @@ class Aws4TestCase {
         return this.request;
     }
 
-    Aws4TestCase(RxHttpClient client) {
-        this.client = client;
-        this.builder = client.requestBuilder();
-    }
-
-    void setName(String name) {
-        this.name = name;
-    }
-
     void setMethod(String method) {
         this.builder.setMethod(method);
     }
 
-
     void addHeader(String key, String val) {
         this.builder.addHeader(key, val);
     }
-
 
     void setBody(String body) {
         this.builder.setBody(body);
@@ -47,6 +41,10 @@ class Aws4TestCase {
 
     String getName() {
         return name;
+    }
+
+    void setName(String name) {
+        this.name = name;
     }
 
     void setUri(String uri) {

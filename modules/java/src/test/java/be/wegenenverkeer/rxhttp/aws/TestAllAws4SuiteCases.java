@@ -6,12 +6,22 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Runs Amazon's AWS V4 request signing Test Suite
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 06/06/16.
  */
 public class TestAllAws4SuiteCases {
 
     AwsSignature4Signer signer = Fixture.signer();
+
+    private static void test(boolean print, Aws4TestCase tc, String expected, String received) {
+        if (print) {
+            System.out.println("Test case: " + tc);
+            System.out.println("========================================");
+            System.out.println("Test case received: " + received);
+            System.out.println("Test case expected: " + expected);
+        }
+        assertEquals("Error for " + tc.getName(), expected, received);
+    }
 
     @Test
     public void testCanonicalRequests() {
@@ -39,16 +49,6 @@ public class TestAllAws4SuiteCases {
             String expected = Fixture.getAuthorizationHeader(tc.getName());
             test(false, tc, expected, header);
         }
-    }
-
-    private static void test(boolean print, Aws4TestCase tc, String expected, String received) {
-        if (print) {
-            System.out.println("Test case: " + tc);
-            System.out.println("========================================");
-            System.out.println("Test case received: " + received);
-            System.out.println("Test case expected: " + expected);
-        }
-        assertEquals("Error for " + tc.getName(), expected, received);
     }
 
 }
