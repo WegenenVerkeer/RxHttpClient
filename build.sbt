@@ -101,7 +101,7 @@ lazy val javaInteropModule = (project in file("modules/java-interop")).settings(
   javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies ++ interopDependencies,
   extraJavaSettings
-) dependsOn rxJavaModule
+) dependsOn (rxJavaModule % "compile->compile;test->test")
 
 lazy val rxJavaModule = (project in file("modules/java")).settings(
   name := "RxHttpClient-RxJava",

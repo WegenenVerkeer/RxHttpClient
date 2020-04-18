@@ -154,7 +154,7 @@ public class RxJavaHttpClient extends BaseRxHttpClient implements RxHttpClient {
         }
 
         @Override
-        protected RxJavaHttpClient createClient(AsyncHttpClient innerClient, RestClientConfig rcConfig, ClientRequestLogFormatter logFmt, RequestSigner... signers) {
+        public RxJavaHttpClient createClient(AsyncHttpClient innerClient, RestClientConfig rcConfig, ClientRequestLogFormatter logFmt, RequestSigner... signers) {
             return new RxJavaHttpClient(innerClient, rcConfig, logFmt, requestSigners.toArray(new RequestSigner[0]));
         }
 

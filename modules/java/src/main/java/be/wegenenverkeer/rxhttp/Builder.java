@@ -66,7 +66,17 @@ public abstract class Builder<T extends RxHttpClient, U extends Builder<T,U>> {
         return createClient(innerClient, rcConfig, logFmt, requestSigners.toArray(new RequestSigner[0]));
     }
 
-    protected abstract T createClient(AsyncHttpClient innerClient, RestClientConfig rcConfig, ClientRequestLogFormatter logFmt, RequestSigner... signers);
+    //TODO -- make the createClient method protected or private. This implies a builder() factory method, rather than directly invoking a static inner class constructor
+    // to get a Builder
+    /**
+     * This is for internal use only. Clients are advised NOT to use this methode.
+     * @param innerClient
+     * @param rcConfig
+     * @param logFmt
+     * @param signers
+     * @return
+     */
+    public abstract T createClient(AsyncHttpClient innerClient, RestClientConfig rcConfig, ClientRequestLogFormatter logFmt, RequestSigner... signers);
 
     
             

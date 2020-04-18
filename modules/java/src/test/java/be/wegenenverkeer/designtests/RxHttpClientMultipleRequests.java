@@ -1,5 +1,6 @@
 package be.wegenenverkeer.designtests;
 
+import be.wegenenverkeer.UsingWiremockRxJava;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.ServerResponse;
 import com.jayway.jsonpath.JsonPath;
@@ -18,7 +19,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 /**
  * Created by Karel Maesen, Geovise BVBA on 27/11/15.
  */
-public class RxHttpClientMultipleRequests extends UsingWireMock {
+public class RxHttpClientMultipleRequests extends UsingWiremockRxJava {
 
     private static Logger LOGGER = LoggerFactory.getLogger(RxHttpClientMultipleRequests.class);
 
