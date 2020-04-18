@@ -105,7 +105,7 @@ lazy val testSettings = Seq(
   parallelExecution in Test := false
 )
 lazy val javaInteropModule = (project in file("modules/java-interop")).settings(
-  name := "RxHttpClient-java-interop",
+  name := "RxHttpClient-interop",
   moduleSettings ++ extraJavaSettings,
   javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies ++ interopDependencies,
@@ -119,7 +119,7 @@ lazy val fs2Module = (project in  file("modules/fs2")).settings(
 ).dependsOn(rxJavaModule % "compile->compile;test->test")
 
 lazy val rxJavaModule = (project in file("modules/java")).settings(
-  name := "RxHttpClient-RxJava",
+  name := "RxHttpClient",
   moduleSettings,
   javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies ++ rxJavaDependencies,
