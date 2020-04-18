@@ -14,14 +14,17 @@ val ScalaBuildOptions = Seq("-unchecked",
 
 val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.12.1"
 
-//val rxStreamsVersion = "1.0.2"
+val rxStreamsVersion = "1.0.3"
 val rxJavaVersion = "3.0.1"
+val reactorVersion = "3.3.3.RELEASE"
 
 val slf4j = "org.slf4j" % "slf4j-api" % "1.7.30"
 val commonsCodec = "commons-codec" % "commons-codec" % "1.10"
 val json = "com.fasterxml.jackson.core" % "jackson-databind" % "2.10.3" % "provided"
-//val rx = "org.reactivestreams" % "reactive-streams" % rxStreamsVersion
-//val rxFlow = "org.reactivestreams" % "reactive-streams-flow-adapters" %  rxStreamsVersion
+val rx = "org.reactivestreams" % "reactive-streams" % rxStreamsVersion
+val reactorAdapter = "io.projectreactor.addons" % "reactor-adapter" % reactorVersion
+val reactorTest = "io.projectreactor" % "reactor-test" % reactorVersion % "test"
+
 val rxJava = "io.reactivex.rxjava3" % "rxjava" % rxJavaVersion
 val specs2 = "org.specs2" %% "specs2-core" % "4.9.3" % "test"
 val slf4jSimple = "org.slf4j" % "slf4j-simple" % "1.7.30" % "test"
@@ -34,8 +37,6 @@ val jsonPath = "com.jayway.jsonpath" % "json-path" % "2.4.0" % "test"
 val commonDependencies = Seq(
   asyncClient,
   slf4j,
-//  rx,
-//  rxFlow,
   commonsCodec,
   json
 )
@@ -43,6 +44,13 @@ val commonDependencies = Seq(
 val rxJavaDependencies = Seq(
   rxJava
 )
+
+lazy val interopDependencies = Seq(
+  rx,
+  reactorAdapter,
+  reactorTest
+)
+
 
 val javaDependencies = commonDependencies ++ Seq(slf4jSimple)
 
@@ -73,6 +81,7 @@ lazy val moduleSettings =
     parallelExecution := false,
     resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
     resolvers += Resolver.typesafeRepo("releases"),
+    resolvers += "Spring repository" at "https://repo.spring.io/milestone"
   ) ++ testSettings ++ publishSettings //++ jacoco.settings
 
 lazy val extraJavaSettings = Seq(
@@ -88,13 +97,13 @@ lazy val testSettings = Seq(
   libraryDependencies ++= mainTestDependencies,
   parallelExecution in Test := false
 )
-lazy val coreModule = (project in file("modules/core")).settings(
-  name := "RxHttpClient-Base",
-  moduleSettings,
+lazy val javaInteropModule = (project in file("modules/java-interop")).settings(
+  name := "RxHttpClient-java-interop",
+  moduleSettings ++ extraJavaSettings,
   javacOptions ++= Seq("--release", "11"),
-  libraryDependencies ++= javaDependencies,
+  libraryDependencies ++= javaDependencies ++ interopDependencies,
   extraJavaSettings
-)
+) dependsOn (rxJavaModule % "compile->compile;test->test")
 
 lazy val rxJavaModule = (project in file("modules/java")).settings(
   name := "RxHttpClient-RxJava",
@@ -102,7 +111,7 @@ lazy val rxJavaModule = (project in file("modules/java")).settings(
   javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies ++ rxJavaDependencies,
   extraJavaSettings
-) dependsOn coreModule
+)
 
 
 lazy val main = (project in file("."))
@@ -110,7 +119,7 @@ lazy val main = (project in file("."))
     moduleSettings ++ disablePublishingRoot ++ extraJavaSettings,
     name := "RxHttpClient"
   )
-  .aggregate(coreModule, rxJavaModule)
+  .aggregate(javaInteropModule, rxJavaModule)
 
 lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
   <licenses>
