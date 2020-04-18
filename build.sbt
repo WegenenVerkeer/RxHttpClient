@@ -23,6 +23,7 @@ val commonsCodec = "commons-codec" % "commons-codec" % "1.10"
 val json = "com.fasterxml.jackson.core" % "jackson-databind" % "2.10.3" % "provided"
 val rx = "org.reactivestreams" % "reactive-streams" % rxStreamsVersion
 val reactorAdapter = "io.projectreactor.addons" % "reactor-adapter" % reactorVersion
+val reactorTest = "io.projectreactor" % "reactor-test" % reactorVersion % "test"
 
 val rxJava = "io.reactivex.rxjava3" % "rxjava" % rxJavaVersion
 val specs2 = "org.specs2" %% "specs2-core" % "4.9.3" % "test"
@@ -46,7 +47,8 @@ val rxJavaDependencies = Seq(
 
 lazy val interopDependencies = Seq(
   rx,
-  reactorAdapter
+  reactorAdapter,
+  reactorTest
 )
 
 

@@ -1,11 +1,10 @@
-package be.wegenenverkeer.rx.client;
+package be.wegenenverkeer.reactivestreams.client;
 
 
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
