@@ -4,10 +4,8 @@ import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.RxHttpClient;
 import be.wegenenverkeer.rxhttp.ServerResponse;
 import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import io.reactivex.observers.TestObserver;
-import io.reactivex.subscribers.TestSubscriber;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Ignore;
 import org.junit.Test;
 

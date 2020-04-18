@@ -1,20 +1,11 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.rxhttp.RxHttpClient;
 import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.Options;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 /**

@@ -1,13 +1,11 @@
 package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.rxhttp.ClientRequest;
-import io.reactivex.Flowable;
-import io.reactivex.subscribers.TestSubscriber;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.Assert.assertTrue;
@@ -51,7 +49,7 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMock{
 
 
     @Test
-    public void testCancellation() throws InterruptedException, ExecutionException, TimeoutException {
+    public void testCancellation() throws InterruptedException {
         stubFor(
                 get(urlPathEqualTo("/sse"))
                         .willReturn(aResponse()

@@ -1,9 +1,9 @@
 package be.wegenenverkeer.rxhttp.rxjava;
 
 import be.wegenenverkeer.rxhttp.ServerResponse;
-import io.reactivex.exceptions.ProtocolViolationException;
-import io.reactivex.processors.AsyncProcessor;
-import io.reactivex.subjects.AsyncSubject;
+import io.reactivex.rxjava3.exceptions.ProtocolViolationException;
+import io.reactivex.rxjava3.processors.AsyncProcessor;
+import io.reactivex.rxjava3.subjects.AsyncSubject;
 import org.asynchttpclient.AsyncCompletionHandler;
 import org.asynchttpclient.Response;
 import org.slf4j.Logger;

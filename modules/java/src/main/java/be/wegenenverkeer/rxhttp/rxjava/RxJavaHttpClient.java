@@ -1,11 +1,11 @@
 package be.wegenenverkeer.rxhttp.rxjava;
 
 import be.wegenenverkeer.rxhttp.*;
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import io.reactivex.Single;
-import io.reactivex.processors.AsyncProcessor;
-import io.reactivex.processors.BehaviorProcessor;
+
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.processors.AsyncProcessor;
+import io.reactivex.rxjava3.processors.BehaviorProcessor;
 import org.asynchttpclient.AsyncHttpClient;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;

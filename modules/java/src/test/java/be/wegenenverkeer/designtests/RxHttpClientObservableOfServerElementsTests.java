@@ -1,10 +1,8 @@
 package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.rxhttp.*;
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import io.reactivex.observers.TestObserver;
-import io.reactivex.subscribers.TestSubscriber;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -97,8 +95,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMock {
         //set up stub
         stubFor(get(urlEqualTo("/contacts"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(20)
-                        .withStatus(500)));
+                .willReturn(aResponse().withStatus(500)));
 
         //set up use case
         String path = "/contacts";

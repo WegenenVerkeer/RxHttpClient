@@ -1,11 +1,7 @@
 package be.wegenenverkeer.rxhttp.rxjava;
 
-import io.reactivex.FlowableOperator;
-import io.reactivex.FlowableSubscriber;
-import io.reactivex.ObservableOperator;
-import io.reactivex.Observer;
-import io.reactivex.subscribers.DefaultSubscriber;
-import io.reactivex.subscribers.DisposableSubscriber;
+import io.reactivex.rxjava3.core.FlowableOperator;
+import io.reactivex.rxjava3.core.FlowableSubscriber;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 

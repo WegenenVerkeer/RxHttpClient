@@ -2,15 +2,15 @@ package be.wegenenverkeer.rxhttp.rxjava;
 
 import be.wegenenverkeer.rxhttp.*;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.reactivex.processors.BehaviorProcessor;
-import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.processors.BehaviorProcessor;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import org.asynchttpclient.AsyncHandler;
 import org.asynchttpclient.HttpResponseBodyPart;
 import org.asynchttpclient.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /**
@@ -67,11 +67,7 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
     }
 
     private String toUtf8String(ServerResponseBodyPart bodyPart) {
-        try {
-            return new String(bodyPart.getBodyPartBytes(), "UTF8");
-        } catch (UnsupportedEncodingException e) {
-           return "<<< binary body part >>>";
-        }
+        return new String(bodyPart.getBodyPartBytes(), StandardCharsets.UTF_8);
     }
 
     //we don't check for hasObservers in the onStatusReceived() and onHeadersReceived(). This guarantees that

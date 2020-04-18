@@ -1,7 +1,7 @@
 package be.wegenenverkeer.rxhttp.rxjava;
 
 import io.netty.buffer.ByteBuf;
-import io.reactivex.Flowable;
+import io.reactivex.rxjava3.core.Flowable;
 import org.asynchttpclient.request.body.Body;
 import org.asynchttpclient.request.body.generator.BodyGenerator;
 import org.reactivestreams.Subscriber;

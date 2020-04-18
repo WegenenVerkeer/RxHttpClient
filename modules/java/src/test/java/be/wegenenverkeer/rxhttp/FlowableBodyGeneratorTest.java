@@ -4,8 +4,8 @@ package be.wegenenverkeer.rxhttp;
 import be.wegenenverkeer.rxhttp.rxjava.FlowableBodyGenerator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.reactivex.Flowable;
-import io.reactivex.schedulers.Schedulers;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.asynchttpclient.request.body.Body;
 import org.junit.Test;
 
