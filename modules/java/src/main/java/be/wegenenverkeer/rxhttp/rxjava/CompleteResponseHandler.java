@@ -8,7 +8,6 @@ import org.asynchttpclient.Response;
 import java.util.function.Consumer;
 
 /**
- *
  * Created by Karel Maesen, Geovise BVBA on 26/02/15.
  */
 class CompleteResponseHandler {
@@ -23,9 +22,9 @@ class CompleteResponseHandler {
         if (status < 400) {
             handleSuccess.accept(response);
         } else if (status < 500) {
-            handleClientError.accept(new HttpClientError(status, ServerResponse.wrap(response), "request failed with status = "+response.getStatusText()));
+            handleClientError.accept(new HttpClientError(status, ServerResponse.wrap(response), "request failed with status = " + response.getStatusText()));
         } else {
-            handleServerError.accept(new HttpServerError(status, ServerResponse.wrap(response), "request failed with status = "+response.getStatusText()));
+            handleServerError.accept(new HttpServerError(status, ServerResponse.wrap(response), "request failed with status = " + response.getStatusText()));
         }
     }
 

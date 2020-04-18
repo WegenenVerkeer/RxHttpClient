@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
-import static be.wegenenverkeer.rxhttp.rxjava.CompleteResponseHandler.withCompleteResponse;
 import static be.wegenenverkeer.rxhttp.ServerResponse.wrap;
+import static be.wegenenverkeer.rxhttp.rxjava.CompleteResponseHandler.withCompleteResponse;
 
 /**
  * A {@link AsyncCompletionHandler} that pushes received items to a specified {@link AsyncSubject}

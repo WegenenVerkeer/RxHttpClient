@@ -36,6 +36,12 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
         this.subject = subject;
     }
 
+    private static void trace(String msg) {
+        if (logger.isTraceEnabled()) {
+            logger.trace(msg);
+        }
+    }
+
     /**
      * Invoked when an unexpected exception occurs during the processing of the response. The exception may have been
      * produced by implementation of onXXXReceived method invocation.
@@ -55,7 +61,7 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
      */
     @Override
     public State onBodyPartReceived(HttpResponseBodyPart bodyPart) {
-        if(!subject.hasSubscribers()) {
+        if (!subject.hasSubscribers()) {
             trace("No observers: Aborting.");
             //bodyPart.markUnderlyingConnectionAsToBeClosed();
             onCompleted(); //send the uncompleted message
@@ -66,13 +72,13 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
         return State.CONTINUE;
     }
 
-    private String toUtf8String(ServerResponseBodyPart bodyPart) {
-        return new String(bodyPart.getBodyPartBytes(), StandardCharsets.UTF_8);
-    }
-
     //we don't check for hasObservers in the onStatusReceived() and onHeadersReceived(). This guarantees that
     //processing continues until some response body parts are received, after which the connection can be
     //marked as to be closed.
+
+    private String toUtf8String(ServerResponseBodyPart bodyPart) {
+        return new String(bodyPart.getBodyPartBytes(), StandardCharsets.UTF_8);
+    }
 
     /**
      * Invoked as soon as the HTTP status line has been received
@@ -101,7 +107,7 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
                 return Optional.ofNullable(responseStatus.getStatusText());
             }
 
-            public String toString(){
+            public String toString() {
                 return String.format("Server response: %d", statuscode);
             }
         });
@@ -134,12 +140,6 @@ class AsyncHandlerWrapper implements AsyncHandler<Boolean> {
         trace("Completed");
         subject.onComplete();
         return true;
-    }
-
-    private static void trace(String msg) {
-        if (logger.isTraceEnabled()) {
-            logger.trace(msg);
-        }
     }
 
 }

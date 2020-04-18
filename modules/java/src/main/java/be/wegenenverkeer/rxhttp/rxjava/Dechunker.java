@@ -5,15 +5,12 @@ import io.reactivex.rxjava3.core.FlowableSubscriber;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import java.nio.charset.Charset;
 import java.util.Arrays;
 
 /**
  * An operator that "de-chunks" the Observerable of <code>ServerResponseElement</code>s in an Observable of messages.
- *
+ * <p>
  * Created by Karel Maesen, Geovise BVBA on 2019-07-05.
- *
- *
  */
 public class Dechunker implements FlowableOperator<String, String> {
 
@@ -26,16 +23,15 @@ public class Dechunker implements FlowableOperator<String, String> {
     }
 
     @Override
-    public Subscriber<? super String> apply(Subscriber<? super String> subscriber) throws Exception {
+    public Subscriber<? super String> apply(Subscriber<? super String> subscriber) {
         return new Op(subscriber, separator);
     }
 
     static final class Op implements FlowableSubscriber<String>, Subscription {
         final Subscriber<? super String> child;
         final String separator;
-
-        private String previous = "";
         Subscription s;
+        private String previous = "";
 
         public Op(Subscriber<? super String> child, String separator) {
             this.child = child;
@@ -45,15 +41,15 @@ public class Dechunker implements FlowableOperator<String, String> {
 
         @Override
         public void onSubscribe(Subscription s) {
-            this.s =s;
+            this.s = s;
             child.onSubscribe(this);
         }
 
         @Override
         public void onNext(String str) {
             String[] events = toChunks(str);
-            for( String ev : events) {
-                if(!ev.isEmpty())  {
+            for (String ev : events) {
+                if (!ev.isEmpty()) {
                     child.onNext(ev);
                 }
             }
@@ -89,12 +85,10 @@ public class Dechunker implements FlowableOperator<String, String> {
                 return parts;
             } else {
                 previous = parts[parts.length - 1];
-                return Arrays.copyOfRange(parts,0, parts.length - 1);
+                return Arrays.copyOfRange(parts, 0, parts.length - 1);
             }
         }
     }
-
-
 
 
 }

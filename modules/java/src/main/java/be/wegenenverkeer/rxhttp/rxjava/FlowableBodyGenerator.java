@@ -31,7 +31,7 @@ public class FlowableBodyGenerator implements BodyGenerator {
     private final Flowable<byte[]> observable;
     private Subscription subscription;
 
-    private BlockingQueue<BodyPart> queue;
+    private final BlockingQueue<BodyPart> queue;
     private volatile Throwable throwable = null;
 
     public FlowableBodyGenerator(Flowable<byte[]> observable) {
@@ -45,7 +45,7 @@ public class FlowableBodyGenerator implements BodyGenerator {
 
     @Override
     public Body createBody() {
-        this.observable.subscribe(new Subscriber<byte[]>() {
+        this.observable.subscribe(new Subscriber<>() {
 
 
             @Override
@@ -140,7 +140,7 @@ public class FlowableBodyGenerator implements BodyGenerator {
         }
     }
 
-    private class BodyPart {
+    private static class BodyPart {
 
         private final ByteBuffer buffer;
         private final boolean isLast;
