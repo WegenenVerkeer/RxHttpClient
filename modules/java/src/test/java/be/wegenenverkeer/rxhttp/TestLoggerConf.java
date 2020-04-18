@@ -1,5 +1,6 @@
 package be.wegenenverkeer.rxhttp;
 
+import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -14,8 +15,8 @@ public class TestLoggerConf {
     private RxHttpClient client = null;
 
     @Test
-    public void testLoggerConfDefault(){
-        client = new RxHttpClient.Builder().setBaseUrl("http://foo.com").build();
+    public void testLoggerConfDefault() {
+        client = new RxJavaHttpClient.Builder().setBaseUrl("http://foo.com").build();
         try {
             ClientRequest request = client.requestBuilder().setMethod("GET").setUrlRelativetoBase("/test").build();
             assertEquals("GET http://foo.com/test", client.toLogMessage(request));
@@ -25,8 +26,8 @@ public class TestLoggerConf {
     }
 
     @Test
-    public void testLoggerConfWithHeader(){
-        client = new RxHttpClient.Builder()
+    public void testLoggerConfWithHeader() {
+        client = new RxJavaHttpClient.Builder()
                 .setBaseUrl("http://foo.com")
                 .logHeaders(Arrays.asList("Test-Header"))
                 .build();
@@ -44,8 +45,8 @@ public class TestLoggerConf {
     }
 
     @Test
-    public void testLoggerConfWithHeaderIsCaseInsentivie(){
-        client = new RxHttpClient.Builder()
+    public void testLoggerConfWithHeaderIsCaseInsentivie() {
+        client = new RxJavaHttpClient.Builder()
                 .setBaseUrl("http://foo.com")
                 .logHeaders(Arrays.asList("Test-Header"))
                 .build();
@@ -63,8 +64,8 @@ public class TestLoggerConf {
     }
 
     @Test
-    public void testLoggerConfWithFParamIsCaseInsensitive(){
-        client = new RxHttpClient.Builder()
+    public void testLoggerConfWithFParamIsCaseInsensitive() {
+        client = new RxJavaHttpClient.Builder()
                 .setBaseUrl("http://foo.com")
                 .logFormParams(Arrays.asList("TestParam"))
                 .build();
@@ -83,8 +84,8 @@ public class TestLoggerConf {
     }
 
     @Test
-    public void testLoggerConfWithFormParam(){
-        client = new RxHttpClient.Builder()
+    public void testLoggerConfWithFormParam() {
+        client = new RxJavaHttpClient.Builder()
                 .setBaseUrl("http://foo.com")
                 .logFormParams(Arrays.asList("TestParam"))
                 .build();

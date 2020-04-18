@@ -1,8 +1,8 @@
 val Organization = "be.wegenenverkeer"
 
-val Version = "1.2.0"
+val Version = "2.0.0-SNAPSHOT"
 
-val ScalaVersion = "2.12.8"
+val ScalaVersion = "2.13.0"
 
 val ScalaBuildOptions = Seq("-unchecked",
                             "-deprecation",
@@ -12,37 +12,45 @@ val ScalaBuildOptions = Seq("-unchecked",
                             "-language:postfixOps")
 
 
-val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.8.1"
-val rxjava = "io.reactivex" % "rxjava" % "1.2.4"
-val rxscala = "io.reactivex" %% "rxscala" % "0.26.5"
-val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
-val commonsCodec = "commons-codec" % "commons-codec" % "1.10"
-val json = "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.8" % "provided"
+val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.12.1"
 
-val junit = "junit" % "junit" % "4.11" % "test"
-val specs2 = "org.specs2" %% "specs2-core" % "3.8.6" % "test"
-val slf4jSimple = "org.slf4j" % "slf4j-simple" % "1.7.6" % "test"
-val wiremock = "com.github.tomakehurst" % "wiremock-jre8" % "2.23.2" % "test"
+//val rxStreamsVersion = "1.0.2"
+val rxJavaVersion = "3.0.1"
+
+val slf4j = "org.slf4j" % "slf4j-api" % "1.7.30"
+val commonsCodec = "commons-codec" % "commons-codec" % "1.10"
+val json = "com.fasterxml.jackson.core" % "jackson-databind" % "2.10.3" % "provided"
+//val rx = "org.reactivestreams" % "reactive-streams" % rxStreamsVersion
+//val rxFlow = "org.reactivestreams" % "reactive-streams-flow-adapters" %  rxStreamsVersion
+val rxJava = "io.reactivex.rxjava3" % "rxjava" % rxJavaVersion
+val specs2 = "org.specs2" %% "specs2-core" % "4.9.3" % "test"
+val slf4jSimple = "org.slf4j" % "slf4j-simple" % "1.7.30" % "test"
+val wiremock = "com.github.tomakehurst" % "wiremock-jre8" % "2.26.3" % "test"
 val junitInterface = "com.novocode" % "junit-interface" % "0.11" % Test
-val jsonPath = "com.jayway.jsonpath" % "json-path" % "1.2.0" % "test"
+val jsonPath = "com.jayway.jsonpath" % "json-path" % "2.4.0" % "test"
+
+
 
 val commonDependencies = Seq(
   asyncClient,
-  rxjava,
   slf4j,
+//  rx,
+//  rxFlow,
   commonsCodec,
   json
 )
 
-val javaDependencies = commonDependencies ++ Seq(slf4jSimple, junitInterface)
+val rxJavaDependencies = Seq(
+  rxJava
+)
+
+val javaDependencies = commonDependencies ++ Seq(slf4jSimple)
 
 val scalaDependencies = commonDependencies ++ Seq(
-  rxscala,
   specs2
 )
 
 val mainTestDependencies = Seq(
-  junit,
   slf4jSimple,
   wiremock,
   junitInterface,
@@ -70,6 +78,7 @@ lazy val moduleSettings =
 lazy val extraJavaSettings = Seq(
   crossPaths := false,
   autoScalaLibrary := false,
+  libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
   //Test / parallelExecution := false,
   //    javacOptions ++= Seq("-Xlint:deprecation"),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
@@ -79,26 +88,29 @@ lazy val testSettings = Seq(
   libraryDependencies ++= mainTestDependencies,
   parallelExecution in Test := false
 )
-
-lazy val javaModule = (project in file("modules/java")).settings(
-  name := "RxHttpClient-java",
+lazy val coreModule = (project in file("modules/core")).settings(
+  name := "RxHttpClient-Base",
   moduleSettings,
+  javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies,
   extraJavaSettings
 )
 
-lazy val scalaModule = (project in file("modules/scala")).settings(
-  name := "RxHttpClient-scala",
+lazy val rxJavaModule = (project in file("modules/java")).settings(
+  name := "RxHttpClient-RxJava",
   moduleSettings,
-  libraryDependencies ++= scalaDependencies
-) dependsOn javaModule
+  javacOptions ++= Seq("--release", "11"),
+  libraryDependencies ++= javaDependencies ++ rxJavaDependencies,
+  extraJavaSettings
+) dependsOn coreModule
+
 
 lazy val main = (project in file("."))
   .settings(
-    moduleSettings ++ disablePublishingRoot,
+    moduleSettings ++ disablePublishingRoot ++ extraJavaSettings,
     name := "RxHttpClient"
   )
-  .aggregate(javaModule, scalaModule)
+  .aggregate(coreModule, rxJavaModule)
 
 lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
   <licenses>

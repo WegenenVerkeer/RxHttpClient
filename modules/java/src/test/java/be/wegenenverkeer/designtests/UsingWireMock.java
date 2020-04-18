@@ -1,19 +1,12 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.rxhttp.RxHttpClient;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
+import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
 import com.github.tomakehurst.wiremock.core.Options;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 /**
@@ -24,18 +17,19 @@ abstract public class UsingWireMock {
 
     static final int REQUEST_TIME_OUT = 5000;
     static final int DEFAULT_TIME_OUT = REQUEST_TIME_OUT * 5;
-
     static int port = 8089;
-
-    static RxHttpClient client;
+    static RxJavaHttpClient client;
 
     @Rule
-    public WireMockRule wireMockRule = new WireMockRule(options().port(port).useChunkedTransferEncoding(Options.ChunkedEncodingPolicy.BODY_FILE));
+    public WireMockRule wireMockRule = new WireMockRule(options()
+            .port(port)
+            .useChunkedTransferEncoding(Options.ChunkedEncodingPolicy.BODY_FILE)
+    );
 
     @BeforeClass
     public static void setUpAndStartServer() {
 
-        client = new RxHttpClient.Builder()
+        client = new RxJavaHttpClient.Builder()
                 .setRequestTimeout(REQUEST_TIME_OUT)
                 .setMaxConnections(3)
                 .setAccept("application/json")
@@ -43,10 +37,8 @@ abstract public class UsingWireMock {
                 .build();
     }
 
-    @SuppressWarnings("unchecked")
-    public <V> List<V> items(V... v) {
-        return Arrays.asList(v);
+    @AfterClass
+    public static void stopServer() {
+        client.close();
     }
-
-
 }

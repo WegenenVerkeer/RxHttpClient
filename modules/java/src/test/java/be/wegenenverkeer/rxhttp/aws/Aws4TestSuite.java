@@ -1,6 +1,7 @@
 package be.wegenenverkeer.rxhttp.aws;
 
 import be.wegenenverkeer.rxhttp.RxHttpClient;
+import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
 import com.google.common.io.Files;
 
 import java.io.File;
@@ -23,7 +24,7 @@ public class Aws4TestSuite implements Iterable<Aws4TestCase> {
 
     Aws4TestSuite(File sourceDir) {
 
-        this.client = new RxHttpClient.Builder()
+        this.client = new RxJavaHttpClient.Builder()
                 .setRequestTimeout(6000)
                 .setMaxConnections(3)
                 .setBaseUrl("http://localhost/")
