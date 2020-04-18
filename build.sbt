@@ -9,7 +9,9 @@ val ScalaBuildOptions = Seq("-unchecked",
                             "-feature",
                             "-language:reflectiveCalls",
                             "-language:implicitConversions",
-                            "-language:postfixOps")
+                            "-language:postfixOps",
+                            "-Ypartial-unification",
+                            "-language:higherKinds")
 
 
 val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.12.1"
@@ -77,6 +79,7 @@ lazy val disablePublishingRoot = Seq(
   publish / skip := true
 )
 
+addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 
 lazy val moduleSettings =
   Seq(
