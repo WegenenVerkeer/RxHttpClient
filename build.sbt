@@ -10,7 +10,6 @@ val ScalaBuildOptions = Seq("-unchecked",
                             "-language:reflectiveCalls",
                             "-language:implicitConversions",
                             "-language:postfixOps",
-                            "-Ypartial-unification",
                             "-language:higherKinds")
 
 
