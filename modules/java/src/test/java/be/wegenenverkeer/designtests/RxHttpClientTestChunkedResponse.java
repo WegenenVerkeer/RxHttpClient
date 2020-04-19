@@ -40,7 +40,7 @@ public class RxHttpClientTestChunkedResponse extends UsingWiremockRxJava {
         Flowable<String> flowable = client.executeAndDechunk(request, "\n");
 
         TestSubscriber<String> subscriber = flowable.test();
-        subscriber.awaitDone(120, TimeUnit.MILLISECONDS);
+        subscriber.awaitDone(200, TimeUnit.MILLISECONDS);
 
         subscriber.assertValueCount(10);
 

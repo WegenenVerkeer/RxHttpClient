@@ -8,6 +8,8 @@ import be.wegenenverkeer.rxhttp.ServerResponse;
 import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.charset.Charset;
@@ -25,7 +27,6 @@ import static org.junit.Assert.fail;
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
 public class RxHttpClientDesignTests extends UsingWiremockRxJava {
-
 
     @Test
     public void GETObservably() {
@@ -246,7 +247,7 @@ public class RxHttpClientDesignTests extends UsingWiremockRxJava {
                 .setRequestTimeout(100)
                 .setMaxConnections(1)
                 .setAccept("application/json")
-                .setBaseUrl("http://localhost:" + port)
+                .setBaseUrl("http://localhost:" + port())
                 .build();
 
         //set up use case
