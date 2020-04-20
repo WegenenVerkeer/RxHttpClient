@@ -18,7 +18,7 @@ val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.12.1"
 val rxStreamsVersion = "1.0.3"
 val rxJavaVersion = "3.0.1"
 val reactorVersion = "3.3.3.RELEASE"
-val fs2Version = "2.2.1"
+val fs2Version = "2.2.2"
 
 val slf4j = "org.slf4j" % "slf4j-api" % "1.7.30"
 val commonsCodec = "commons-codec" % "commons-codec" % "1.10"
@@ -61,8 +61,8 @@ val scalaDependencies = commonDependencies ++ Seq(
 )
 
 val fs2Dependencies = commonDependencies ++ scalaDependencies ++ Seq(
-  "co.fs2" %% "fs2-core" % fs2Version,
-  "co.fs2" %% "fs2-reactive-streams" % fs2Version
+  "co.fs2" %% "fs2-core" % fs2Version % "provided",
+  "co.fs2" %% "fs2-reactive-streams" % fs2Version % "provided"
 )
 
 val mainTestDependencies = Seq(
@@ -106,21 +106,21 @@ lazy val testSettings = Seq(
   libraryDependencies ++= mainTestDependencies,
   parallelExecution in Test := false
 )
-lazy val javaInteropModule = (project in file("modules/java-interop")).settings(
+lazy val javaInterop = (project in file("modules/java-interop")).settings(
   name := "RxHttpClient-interop",
   moduleSettings ++ extraJavaSettings,
   javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies ++ interopDependencies,
   extraJavaSettings
-) dependsOn (rxJavaModule % "compile->compile;test->test")
+) dependsOn (java % "compile->compile;test->test")
 
-lazy val fs2Module = (project in  file("modules/fs2")).settings(
+lazy val fs2 = (project in  file("modules/fs2")).settings(
   name := "RxHttpclient-fs2",
   moduleSettings,
   libraryDependencies ++= fs2Dependencies
-).dependsOn(rxJavaModule % "compile->compile;test->test")
+).dependsOn(java % "compile->compile;test->test")
 
-lazy val rxJavaModule = (project in file("modules/java")).settings(
+lazy val java = (project in file("modules/java")).settings(
   name := "RxHttpClient",
   moduleSettings,
   javacOptions ++= Seq("--release", "11"),
@@ -133,7 +133,7 @@ lazy val main = (project in file("."))
     moduleSettings ++ disablePublishingRoot ++ extraJavaSettings,
     name := "RxHttpClient"
   )
-  .aggregate(javaInteropModule, rxJavaModule, fs2Module)
+  .aggregate(javaInterop, java, fs2)
 
 lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
   <licenses>

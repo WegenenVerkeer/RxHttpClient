@@ -22,8 +22,6 @@ trait WireMockSupport extends BeforeAfterEach {
   def client: RxJavaHttpClient = rx
 
   def before: Unit = {
-    println("Starting server")
-
     server.start()
     rx = new RxJavaHttpClient.Builder()
       .setRequestTimeout(REQUEST_TIME_OUT)
