@@ -33,7 +33,9 @@ of this trait.
 [source, scala]
 ----
 val client : RxJavaHttpClient = ???
-include::src/test/scala/Fs2InteropSpecification.scala[lines=24..26,indent=0]
+
+val response = client.fs2HttpApi.stream[IO, String](request, b => new String(b))
+val output = response.compile.toVector.unsafeRunSync()
 ----
 
 == Usage
@@ -43,14 +45,20 @@ the request will only fire when the effect is run.
 
 [source, scala]
 ----
+
+import scala.concurrent.ExecutionContext
+implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+import be.wegenenverkeer.rxhttp.fs2.Implicits._
+
 val client : RxJavaHttpClient = ???
-include::src/test/scala/Fs2InteropSpecification.scala[lines=21..25, indent=0]
+val response = client.fs2HttpApi.stream[IO, String](request, b => new String(b))
+
 ----
 
 We can also return the complete response as a single value wrapped in an `IO`.
 [source, scala]
 ----
-include::src/test/scala/Fs2InteropSpecification.scala[lines=46, indent=0]
+val resp = client.fs2HttpApi.execute[IO, String](request, sr => sr.getResponseBody)
 //resp : IO[String]
 ----
 
