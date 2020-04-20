@@ -2,8 +2,6 @@ package be.wegenenverkeer.rxhttp.reactor;
 
 import be.wegenenverkeer.rxhttp.*;
 import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
-import be.wegenenverkeer.rxhttp.rxstreams.RxStreamsHttpClient;
-import io.reactivex.rxjava3.core.Completable;
 import org.asynchttpclient.AsyncHttpClient;
 import reactor.adapter.rxjava.RxJava3Adapter;
 import reactor.core.publisher.Flux;

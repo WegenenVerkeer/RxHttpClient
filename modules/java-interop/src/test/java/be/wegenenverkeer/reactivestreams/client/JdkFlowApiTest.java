@@ -4,9 +4,10 @@ package be.wegenenverkeer.reactivestreams.client;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
+import org.reactivestreams.FlowAdapters;
 
 import java.nio.charset.Charset;
+import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -19,7 +20,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
  *
  * Created by Karel Maesen, Geovise BVBA on 18/04/2020.
  */
-public class RxHttpApiTest extends UsingWireMockRxStreams {
+public class JdkFlowApiTest extends UsingWireMockJdkFlow {
 
     @Test
     public void smokeTest(){
@@ -40,9 +41,11 @@ public class RxHttpApiTest extends UsingWireMockRxStreams {
                 .addQueryParam("q", "test")
                 .build();
 
-        Publisher<String> publisher = client.executeObservably(request, bytes -> new String(bytes, Charset.forName("UTF8")));
+        Flow.Publisher<String> publisher = client.executeObservably(request, bytes -> new String(bytes, Charset.forName("UTF8")));
         TestSubscriber<String> testSubscriber = TestSubscriber.create();
-        publisher.subscribe(testSubscriber);
+
+        //and back to RxJava to enable test (we basically test whether all this compiles anyway)
+        FlowAdapters.toPublisher(publisher).subscribe(testSubscriber);
 
         testSubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
         testSubscriber.assertNoErrors();

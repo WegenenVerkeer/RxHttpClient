@@ -9,12 +9,15 @@ import org.junit.Before;
 import org.junit.Rule;
 
 
+import java.io.Closeable;
+import java.io.IOException;
+
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 18/04/2020.
  */
-public class UsingWireMock<C extends RxHttpClient> {
+public class UsingWireMock< C extends Closeable> {
 
     public final int REQUEST_TIME_OUT = 5000;
     public final int DEFAULT_TIME_OUT = REQUEST_TIME_OUT * 5;
@@ -44,7 +47,11 @@ public class UsingWireMock<C extends RxHttpClient> {
 
     @After
     public void stopServer() {
-        client.close();
+        try {
+            client.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Builder<C, ?> getBuilder() { return null;}

@@ -25,7 +25,7 @@ import static org.asynchttpclient.Dsl.asyncHttpClient;
 /**
  * A Builder for {@code RxHttpClient} builders.
  */
-public abstract class Builder<T extends RxHttpClient, U extends Builder<T,U>> {
+public abstract class Builder<T, U extends Builder<T,U>> {
 
     final private static Logger logger = LoggerFactory.getLogger(BaseRxHttpClient.class);
 

@@ -3,6 +3,7 @@ package be.wegenenverkeer.rxhttp;
 import org.asynchttpclient.AsyncHttpClient;
 import org.reactivestreams.Publisher;
 
+import java.io.Closeable;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -11,7 +12,7 @@ import java.util.function.Function;
 /**
  * Created by Karel Maesen, Geovise BVBA on 2019-07-12.
  */
-public interface RxHttpClient {
+public interface RxHttpClient extends Closeable {
     <F> CompletableFuture<F> execute(ClientRequest request, Function<ServerResponse, F> transformer);
 
     /**
