@@ -1,4 +1,3 @@
-import be.wegenenverkeer.rxhttp.fs2.Implicits._
 import cats.effect.{ContextShift, IO}
 
 /**
@@ -16,15 +15,15 @@ class Fs2InteropSpecification extends org.specs2.mutable.Specification
 
 
       stub(expectBody)
-
-      import scala.concurrent.ExecutionContext
-      implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-
       val path = "/contacts"
       val request = client.requestBuilder.setMethod("GET").setUrlRelativetoBase(path).addQueryParam("q", "test").build
 
-      val str = client.fs2HttpApi.stream[IO, String](request, b => new String(b))
-      val output = str.compile.toVector.unsafeRunSync()
+      import scala.concurrent.ExecutionContext
+      implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+      import be.wegenenverkeer.rxhttp.fs2.Implicits._
+
+      val response = client.fs2HttpApi.stream[IO, String](request, b => new String(b))
+      val output = response.compile.toVector.unsafeRunSync()
 
       output(0) must_== expectBody
 
@@ -43,6 +42,7 @@ class Fs2InteropSpecification extends org.specs2.mutable.Specification
       val path = "/contacts"
       val request = client.requestBuilder.setMethod("GET").setUrlRelativetoBase(path).addQueryParam("q", "test").build
 
+      import be.wegenenverkeer.rxhttp.fs2.Implicits._
       val resp = client.fs2HttpApi.execute[IO, String](request, sr => sr.getResponseBody)
       val output = resp.unsafeRunSync()
 
