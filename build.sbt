@@ -9,7 +9,8 @@ val ScalaBuildOptions = Seq("-unchecked",
                             "-feature",
                             "-language:reflectiveCalls",
                             "-language:implicitConversions",
-                            "-language:postfixOps")
+                            "-language:postfixOps",
+                            "-language:higherKinds")
 
 
 val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.12.1"
@@ -17,6 +18,7 @@ val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.12.1"
 val rxStreamsVersion = "1.0.3"
 val rxJavaVersion = "3.0.1"
 val reactorVersion = "3.3.3.RELEASE"
+val fs2Version = "2.2.1"
 
 val slf4j = "org.slf4j" % "slf4j-api" % "1.7.30"
 val commonsCodec = "commons-codec" % "commons-codec" % "1.10"
@@ -58,6 +60,11 @@ val scalaDependencies = commonDependencies ++ Seq(
   specs2
 )
 
+val fs2Dependencies = commonDependencies ++ scalaDependencies ++ Seq(
+  "co.fs2" %% "fs2-core" % fs2Version,
+  "co.fs2" %% "fs2-reactive-streams" % fs2Version
+)
+
 val mainTestDependencies = Seq(
   slf4jSimple,
   wiremock,
@@ -71,6 +78,7 @@ lazy val disablePublishingRoot = Seq(
   publish / skip := true
 )
 
+addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 
 lazy val moduleSettings =
   Seq(
@@ -79,6 +87,8 @@ lazy val moduleSettings =
     scalaVersion := ScalaVersion,
     scalacOptions := ScalaBuildOptions,
     parallelExecution := false,
+    parallelExecution in Test := false,
+    test / fork := true,
     resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
     resolvers += Resolver.typesafeRepo("releases"),
     resolvers += "Spring repository" at "https://repo.spring.io/milestone"
@@ -88,7 +98,6 @@ lazy val extraJavaSettings = Seq(
   crossPaths := false,
   autoScalaLibrary := false,
   libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
-  //Test / parallelExecution := false,
   //    javacOptions ++= Seq("-Xlint:deprecation"),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
 )
@@ -98,28 +107,33 @@ lazy val testSettings = Seq(
   parallelExecution in Test := false
 )
 lazy val javaInteropModule = (project in file("modules/java-interop")).settings(
-  name := "RxHttpClient-java-interop",
+  name := "RxHttpClient-interop",
   moduleSettings ++ extraJavaSettings,
   javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies ++ interopDependencies,
   extraJavaSettings
 ) dependsOn (rxJavaModule % "compile->compile;test->test")
 
+lazy val fs2Module = (project in  file("modules/fs2")).settings(
+  name := "RxHttpclient-fs2",
+  moduleSettings,
+  libraryDependencies ++= fs2Dependencies
+).dependsOn(rxJavaModule % "compile->compile;test->test")
+
 lazy val rxJavaModule = (project in file("modules/java")).settings(
-  name := "RxHttpClient-RxJava",
+  name := "RxHttpClient",
   moduleSettings,
   javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies ++ rxJavaDependencies,
   extraJavaSettings
 )
 
-
 lazy val main = (project in file("."))
   .settings(
     moduleSettings ++ disablePublishingRoot ++ extraJavaSettings,
     name := "RxHttpClient"
   )
-  .aggregate(javaInteropModule, rxJavaModule)
+  .aggregate(javaInteropModule, rxJavaModule, fs2Module)
 
 lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
   <licenses>

@@ -19,7 +19,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
  *
  * Created by Karel Maesen, Geovise BVBA on 18/04/2020.
  */
-public class RxHttpApiTest extends UsingWiremockRxStreams {
+public class RxHttpApiTest extends UsingWireMockRxStreams {
 
     @Test
     public void smokeTest(){

@@ -1,6 +1,6 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.UsingWiremockRxJava;
+import be.wegenenverkeer.UsingWireMockRxJava;
 import be.wegenenverkeer.rxhttp.*;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
  * Supports the same set of tests as {@link RxHttpClientDesignTests}, but uses the executeObservably(ServerRequest) method.
  * * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
-public class RxHttpClientObservableOfServerElementsTests extends UsingWiremockRxJava {
+public class RxHttpClientObservableOfServerElementsTests extends UsingWireMockRxJava {
 
     @Test
     public void GETHappyPath() {
