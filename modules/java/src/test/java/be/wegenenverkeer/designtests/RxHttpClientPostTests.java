@@ -1,6 +1,6 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.UsingWiremockRxJava;
+import be.wegenenverkeer.UsingWireMockRxJava;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.HttpClientError;
 import be.wegenenverkeer.rxhttp.ServerResponse;
@@ -17,7 +17,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
  * <p>
  * Created by Karel Maesen, Geovise BVBA on 19/12/14.
  */
-public class RxHttpClientPostTests extends UsingWiremockRxJava {
+public class RxHttpClientPostTests extends UsingWireMockRxJava {
 
     //this is a post that creates a contact entity, and then
     //retrieves it back from the server.

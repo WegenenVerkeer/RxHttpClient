@@ -1,6 +1,6 @@
 package be.wegenenverkeer.designtests;
 
-import be.wegenenverkeer.UsingWiremockRxJava;
+import be.wegenenverkeer.UsingWireMockRxJava;
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.HttpClientError;
 import be.wegenenverkeer.rxhttp.HttpServerError;
@@ -8,8 +8,6 @@ import be.wegenenverkeer.rxhttp.ServerResponse;
 import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.charset.Charset;
@@ -26,7 +24,7 @@ import static org.junit.Assert.fail;
  * Behavior Unit test
  * Created by Karel Maesen, Geovise BVBA on 06/12/14.
  */
-public class RxHttpClientDesignTests extends UsingWiremockRxJava {
+public class RxHttpClientDesignTests extends UsingWireMockRxJava {
 
     @Test
     public void GETObservably() {

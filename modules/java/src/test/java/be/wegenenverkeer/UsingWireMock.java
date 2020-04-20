@@ -14,7 +14,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 /**
  * Created by Karel Maesen, Geovise BVBA on 18/04/2020.
  */
-public class UsingWiremock<C extends RxHttpClient> {
+public class UsingWireMock<C extends RxHttpClient> {
 
     public final int REQUEST_TIME_OUT = 5000;
     public final int DEFAULT_TIME_OUT = REQUEST_TIME_OUT * 5;

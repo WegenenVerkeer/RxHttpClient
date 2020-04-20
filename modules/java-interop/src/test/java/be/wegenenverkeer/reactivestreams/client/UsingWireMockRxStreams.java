@@ -1,16 +1,13 @@
 package be.wegenenverkeer.reactivestreams.client;
 
-import be.wegenenverkeer.UsingWiremock;
+import be.wegenenverkeer.UsingWireMock;
 import be.wegenenverkeer.rxhttp.Builder;
-import be.wegenenverkeer.rxhttp.RxHttpClient;
 import be.wegenenverkeer.rxhttp.rxstreams.RxStreamsHttpClient;
-import org.junit.After;
-import org.junit.Before;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 18/04/2020.
  */
-public class UsingWiremockRxStreams extends UsingWiremock {
+public class UsingWireMockRxStreams extends UsingWireMock {
 
     @Override
     public Builder getBuilder() {

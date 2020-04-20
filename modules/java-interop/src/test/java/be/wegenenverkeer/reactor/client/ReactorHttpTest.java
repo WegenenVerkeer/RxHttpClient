@@ -16,7 +16,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
  *
  * Created by Karel Maesen, Geovise BVBA on 18/04/2020.
  */
-public class ReactorHttpTest extends UsingWiremockReactor {
+public class ReactorHttpTest extends UsingWireMockReactor {
 
     @Test
     public void smokeTest(){
