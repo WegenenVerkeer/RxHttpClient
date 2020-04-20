@@ -6,46 +6,45 @@
 This HTTP Client wraps the excellent [AsyncHttpClient](https://github.com/AsyncHttpClient/async-http-client) (AHC) so that
 Observables are returned, and a number of best practices in RESTful integration are enforced.
 
-# Upgrade to AHC 2
+# Version 2.x
 
-This version of RxHttpClient uses AHC 2.8.x. This implies a number of minor API changes w.r.t to the 0.x versions. 
+## Overview of changes
 
-API Changes:
+- `RxHttpClient` is now an interface that exposes an API based on [Reactive Streams](https://github.com/reactive-streams/reactive-streams-jvm). This
+ API is intended as a foundation for interoperability. It is not to be used in client code
+- The primary implementation of `RxHttpClient` is `RxJavaHttpClient`, which is based on [RxJava 3](https://github.com/ReactiveX/RxJava)
+- A java-interop libraries contains implementations for Spring `Reactor` and the jdk9 `Flow` API
+- A scala `fs2` module, provides an alternative io.fs2.Streams-based API (see the [README](modules/fs2/README.md))  
 
- - The methods in ObservableBodyGenerators no longer declare that the throw `Exception`s
- - `ServerResponse#getResponseBody(String)` replaced by `ServerResponse#getResponseBody(String)`
+## Design
+This version is built primarily on:
+
+ - [AsyncHttpClient 2.x](https://github.com/AsyncHttpClient/async-http-client)
+ - [RxJava 3.x](https://github.com/ReactiveX/RxJava)
  
-The following methods have been removed:
+RxJava 3 is fully compatible with [Reactive Streams](https://github.com/reactive-streams/reactive-streams-jvm) which enables this library to 
+work with with other Reactive-streams compatible libraries such as Reactor, Akka and FS2.
 
- - `RxHttpClient.Builder#setExecutorService()`. Replaced by `RxHttpClient.Builder#setThreadFactory()`
- - `RxHttpClient.Builder#setHostnameVerifier()` 
- - `RxHttpClient.Builder#setUseRelativeURIsWithConnectProxies()`
-
-
-The following methods have been deprecated:
-
- - `ClientRequest#getContentLength()`
- - `RxHttpClient.Builder#setAllowPoolingConnections(boolean)`: use `setKeepAlive()`
- - `RxHttpClient.Builder#setAcceptAnyCertificate(boolean)`: use `RxHttpClient.Builder#setUseInsecureTrustManager(boolean)`
- - `RxHttpClient.Builder setDisableUrlEncodingForBoundedRequests(boolean)`: use ` RxHttpClient.Builder#setDisableUrlEncodingForBoundRequests(boolean)`
+Although the JDK9 Flow API is semantically equivalent to the Reactive-Streams API, *it does not implement the 
+Reactive Streams API*. For this reason, the `FlowHttpClient` is not an implementor of the `RxHttpClient` interface.
 
 # User Guide
 
-## The RxHttpClient
+## The RxJavaHttpClient
 
-The intent is that your application uses one `RxHttpClient` instance for each integration point (usually a REST service). Because creating
- an `RxHttpClient` is expensive, you should do this only once in your application. 
+The intent is that your application uses one `RxJavaHttpClient` instance for each integration point (usually a REST service). Because creating
+ an `RxJavaHttpClient` is expensive, you should do this only once in your application. 
    
-As `RxHttpClients` are limited to one service, we have natural bulkheads between integration points: errors and failures with 
+As `RxJavaHttpClients` are limited to one service, we have natural bulkheads between integration points: errors and failures with 
 respect to one integration point will have no direct effect on other integration points (at least if following the recommendations below).  
 
 
-## Creating an RxHttpClient
+### Creating an RxHttpClient
 
-An `RxHttpClient` is created using the `RxHttpClient.Builder` as in this example for Java:
+An `RxJavaHttpClient` is created using the `RxHttpClient.Builder` as in this example for Java:
 
 
-    RxHttpClient client = new RxHttpClient.Builder()
+    RxJavaHttpClient client = new RxJavaHttpClient.Builder()
                     .setRequestTimeout(REQUEST_TIME_OUT)
                     .setMaxConnections(MAX_CONNECTIONS)
                     .setConnectionTTL(60000)
@@ -54,22 +53,8 @@ An `RxHttpClient` is created using the `RxHttpClient.Builder` as in this example
                     .setBaseUrl("http://example.com/api")
                     .build();
 
-and for Scala:
 
-    import be.wegenenverkeer.rxhttp.scala.ImplicitConversions._
-
-    val client = new RxHttpClient.Builder()
-                        .setRequestTimeout(REQUEST_TIME_OUT)
-                        .setMaxConnections(MAX_CONNECTIONS)
-                        .setConnectionTTL(60000)
-                        .setConnectionTimeout(1000)
-                        .setAccept("application/json")
-                        .setBaseUrl("http://example.com/api")
-                        .build
-                        .asScala
-
-
-## Creating Requests
+### Creating Requests
 
 REST Requests can be created using `ClientRequestBuilders` which in turn can be got from `RxHttpClient` instances, like so:
  
@@ -115,5 +100,27 @@ doesn't get stuck waiting for very slow or non-responsive servers.
 destroyed
 
 
+# Notes when upgrading from versions prior to 1.0
+
+Since version 1.0, RxHttpClient uses AHC 2.6.x. or later. This implies a number of minor API changes w.r.t to the 0.x versions. 
+
+API Changes:
+
+ - The methods in ObservableBodyGenerators no longer declare that the throw `Exception`s
+ - `ServerResponse#getResponseBody(String)` replaced by `ServerResponse#getResponseBody(String)`
+ 
+The following methods have been removed:
+
+ - `RxHttpClient.Builder#setExecutorService()`. Replaced by `RxHttpClient.Builder#setThreadFactory()`
+ - `RxHttpClient.Builder#setHostnameVerifier()` 
+ - `RxHttpClient.Builder#setUseRelativeURIsWithConnectProxies()`
+
+
+The following methods have been deprecated:
+
+ - `ClientRequest#getContentLength()`
+ - `RxHttpClient.Builder#setAllowPoolingConnections(boolean)`: use `setKeepAlive()`
+ - `RxHttpClient.Builder#setAcceptAnyCertificate(boolean)`: use `RxHttpClient.Builder#setUseInsecureTrustManager(boolean)`
+ - `RxHttpClient.Builder setDisableUrlEncodingForBoundedRequests(boolean)`: use ` RxHttpClient.Builder#setDisableUrlEncodingForBoundRequests(boolean)`
 
 
