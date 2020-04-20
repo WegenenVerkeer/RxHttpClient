@@ -34,7 +34,6 @@ public class UsingWiremock<C extends RxHttpClient> {
 
     @Before
     public void setUpAndStartServer() {
-        System.out.println("Starting SERVER");
         client = getBuilder()
                 .setRequestTimeout(REQUEST_TIME_OUT)
                 .setMaxConnections(3)
@@ -45,7 +44,6 @@ public class UsingWiremock<C extends RxHttpClient> {
 
     @After
     public void stopServer() {
-        System.out.println("Stopping SERVER");
         client.close();
     }
 
