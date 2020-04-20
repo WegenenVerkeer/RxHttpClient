@@ -1,6 +1,6 @@
 # Overview
 
-This module provides interop with the https://github.com/functional-streams-for-scala/fs2[FS2] library.
+This module provides interop with the [FS2](https://github.com/functional-streams-for-scala/fs2) library.
 
 
 # Getting Started

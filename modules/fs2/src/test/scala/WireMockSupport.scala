@@ -32,13 +32,11 @@ trait WireMockSupport extends BeforeAfterEach {
   }
 
   def after(): Unit = {
-    println("Stopping server")
     server.stop()
     rx.close()
   }
 
   protected def port: Int = {
-    println(s"Server reported as: ${server.port()}")
     server.port()
   }
 

@@ -1,4 +1,6 @@
+import be.wegenenverkeer.rxhttp.fs2.Implicits._
 import cats.effect.{ContextShift, IO}
+import scala.concurrent.ExecutionContext
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 20/04/2020.
@@ -13,14 +15,12 @@ class Fs2InteropSpecification extends org.specs2.mutable.Specification
     "provide an a FS2-compliant streaming interface" in {
       val expectBody = "{ 'contacts': [1,2,3] }"
 
+      implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
       stub(expectBody)
       val path = "/contacts"
       val request = client.requestBuilder.setMethod("GET").setUrlRelativetoBase(path).addQueryParam("q", "test").build
 
-      import scala.concurrent.ExecutionContext
-      implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-      import be.wegenenverkeer.rxhttp.fs2.Implicits._
 
       val response = client.fs2HttpApi.stream[IO, String](request, b => new String(b))
       val output = response.compile.toVector.unsafeRunSync()
@@ -42,7 +42,6 @@ class Fs2InteropSpecification extends org.specs2.mutable.Specification
       val path = "/contacts"
       val request = client.requestBuilder.setMethod("GET").setUrlRelativetoBase(path).addQueryParam("q", "test").build
 
-      import be.wegenenverkeer.rxhttp.fs2.Implicits._
       val resp = client.fs2HttpApi.execute[IO, String](request, sr => sr.getResponseBody)
       val output = resp.unsafeRunSync()
 
