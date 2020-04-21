@@ -15,6 +15,7 @@ import java.util.Optional;
  *
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
+@Deprecated
 abstract public class MutableResponseProcessor {
 
     private int statusCode;

@@ -1,48 +1,71 @@
 val Organization = "be.wegenenverkeer"
 
-val Version = "1.2.0"
+val Version = "2.0-RC1"
 
-val ScalaVersion = "2.12.8"
+val ScalaVersion = "2.13.0"
 
 val ScalaBuildOptions = Seq("-unchecked",
                             "-deprecation",
                             "-feature",
                             "-language:reflectiveCalls",
                             "-language:implicitConversions",
-                            "-language:postfixOps")
+                            "-language:postfixOps",
+                            "-language:higherKinds")
 
 
-val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.8.1"
-val rxjava = "io.reactivex" % "rxjava" % "1.2.4"
-val rxscala = "io.reactivex" %% "rxscala" % "0.26.5"
-val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
+val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.12.1"
+
+val rxStreamsVersion = "1.0.3"
+val rxJavaVersion = "3.0.1"
+val reactorVersion = "3.3.3.RELEASE"
+val fs2Version = "2.2.2"
+
+val slf4j = "org.slf4j" % "slf4j-api" % "1.7.30"
 val commonsCodec = "commons-codec" % "commons-codec" % "1.10"
-val json = "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.8" % "provided"
+val json = "com.fasterxml.jackson.core" % "jackson-databind" % "2.10.3" % "provided"
+val rx = "org.reactivestreams" % "reactive-streams" % rxStreamsVersion
+val reactorAdapter = "io.projectreactor.addons" % "reactor-adapter" % reactorVersion
+val reactorTest = "io.projectreactor" % "reactor-test" % reactorVersion % "test"
 
-val junit = "junit" % "junit" % "4.11" % "test"
-val specs2 = "org.specs2" %% "specs2-core" % "3.8.6" % "test"
-val slf4jSimple = "org.slf4j" % "slf4j-simple" % "1.7.6" % "test"
-val wiremock = "com.github.tomakehurst" % "wiremock-jre8" % "2.23.2" % "test"
+val rxJava = "io.reactivex.rxjava3" % "rxjava" % rxJavaVersion
+val specs2 = "org.specs2" %% "specs2-core" % "4.9.3" % "test"
+val slf4jSimple = "org.slf4j" % "slf4j-simple" % "1.7.30" % "test"
+val wiremock = "com.github.tomakehurst" % "wiremock-jre8" % "2.26.3" % "test"
 val junitInterface = "com.novocode" % "junit-interface" % "0.11" % Test
-val jsonPath = "com.jayway.jsonpath" % "json-path" % "1.2.0" % "test"
+val jsonPath = "com.jayway.jsonpath" % "json-path" % "2.4.0" % "test"
+
+
 
 val commonDependencies = Seq(
   asyncClient,
-  rxjava,
   slf4j,
   commonsCodec,
   json
 )
 
-val javaDependencies = commonDependencies ++ Seq(slf4jSimple, junitInterface)
+val rxJavaDependencies = Seq(
+  rxJava
+)
+
+lazy val interopDependencies = Seq(
+  rx,
+  reactorAdapter,
+  reactorTest
+)
+
+
+val javaDependencies = commonDependencies ++ Seq(slf4jSimple)
 
 val scalaDependencies = commonDependencies ++ Seq(
-  rxscala,
   specs2
 )
 
+val fs2Dependencies = commonDependencies ++ scalaDependencies ++ Seq(
+  "co.fs2" %% "fs2-core" % fs2Version % "provided",
+  "co.fs2" %% "fs2-reactive-streams" % fs2Version % "provided"
+)
+
 val mainTestDependencies = Seq(
-  junit,
   slf4jSimple,
   wiremock,
   junitInterface,
@@ -55,6 +78,7 @@ lazy val disablePublishingRoot = Seq(
   publish / skip := true
 )
 
+addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 
 lazy val moduleSettings =
   Seq(
@@ -63,14 +87,17 @@ lazy val moduleSettings =
     scalaVersion := ScalaVersion,
     scalacOptions := ScalaBuildOptions,
     parallelExecution := false,
+    parallelExecution in Test := false,
+    test / fork := true,
     resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
     resolvers += Resolver.typesafeRepo("releases"),
+    resolvers += "Spring repository" at "https://repo.spring.io/milestone"
   ) ++ testSettings ++ publishSettings //++ jacoco.settings
 
 lazy val extraJavaSettings = Seq(
   crossPaths := false,
   autoScalaLibrary := false,
-  //Test / parallelExecution := false,
+  libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
   //    javacOptions ++= Seq("-Xlint:deprecation"),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
 )
@@ -79,26 +106,34 @@ lazy val testSettings = Seq(
   libraryDependencies ++= mainTestDependencies,
   parallelExecution in Test := false
 )
+lazy val javaInterop = (project in file("modules/java-interop")).settings(
+  name := "RxHttpClient-interop",
+  moduleSettings ++ extraJavaSettings,
+  javacOptions ++= Seq("--release", "11"),
+  libraryDependencies ++= javaDependencies ++ interopDependencies,
+  extraJavaSettings
+) dependsOn (java % "compile->compile;test->test")
 
-lazy val javaModule = (project in file("modules/java")).settings(
-  name := "RxHttpClient-java",
+lazy val fs2 = (project in  file("modules/fs2")).settings(
+  name := "RxHttpclient-fs2",
   moduleSettings,
-  libraryDependencies ++= javaDependencies,
+  libraryDependencies ++= fs2Dependencies
+).dependsOn(java % "compile->compile;test->test")
+
+lazy val java = (project in file("modules/java")).settings(
+  name := "RxHttpClient",
+  moduleSettings,
+  javacOptions ++= Seq("--release", "11"),
+  libraryDependencies ++= javaDependencies ++ rxJavaDependencies,
   extraJavaSettings
 )
 
-lazy val scalaModule = (project in file("modules/scala")).settings(
-  name := "RxHttpClient-scala",
-  moduleSettings,
-  libraryDependencies ++= scalaDependencies
-) dependsOn javaModule
-
 lazy val main = (project in file("."))
   .settings(
-    moduleSettings ++ disablePublishingRoot,
+    moduleSettings ++ disablePublishingRoot ++ extraJavaSettings,
     name := "RxHttpClient"
   )
-  .aggregate(javaModule, scalaModule)
+  .aggregate(javaInterop, java, fs2)
 
 lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
   <licenses>

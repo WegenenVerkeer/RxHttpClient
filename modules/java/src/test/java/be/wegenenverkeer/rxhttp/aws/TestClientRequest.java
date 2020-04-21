@@ -2,6 +2,7 @@ package be.wegenenverkeer.rxhttp.aws;
 
 import be.wegenenverkeer.rxhttp.ClientRequest;
 import be.wegenenverkeer.rxhttp.RxHttpClient;
+import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -13,7 +14,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestClientRequest {
 
-    private RxHttpClient client = new RxHttpClient
+    private RxHttpClient client = new RxJavaHttpClient
             .Builder()
             .setBaseUrl("http://foo.com")
             .setMaxConnections(1)

@@ -106,7 +106,7 @@ public class ClientRequest {
         return request.getCharset().name();
     }
 
-    Request unwrap() {
+    public Request unwrap() {
         return this.request;
     }
 

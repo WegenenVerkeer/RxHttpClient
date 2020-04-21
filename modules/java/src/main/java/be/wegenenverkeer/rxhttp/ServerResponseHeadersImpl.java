@@ -9,7 +9,7 @@ import java.util.*;
  * <p>
  * Created by Karel Maesen, Geovise BVBA on 18/12/14.
  */
-class ServerResponseHeadersImpl implements ServerResponseHeaders {
+public class ServerResponseHeadersImpl implements ServerResponseHeaders {
 
     Map<String, List<String>> headers = new HashMap<>();
 
@@ -41,5 +41,9 @@ class ServerResponseHeadersImpl implements ServerResponseHeaders {
         List<String> l = getHeaders(name);
         if (l.isEmpty()) return Optional.empty();
         return Optional.ofNullable(l.get(0));
+    }
+
+    public String toString(){
+        return headers.toString();
     }
 }
