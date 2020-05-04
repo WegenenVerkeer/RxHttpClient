@@ -2,6 +2,8 @@ package be.wegenenverkeer;
 
 import be.wegenenverkeer.rxhttp.Builder;
 import be.wegenenverkeer.rxhttp.RxHttpClient;
+import com.github.tomakehurst.wiremock.common.FileSource;
+import com.github.tomakehurst.wiremock.common.SingleRootFileSource;
 import com.github.tomakehurst.wiremock.core.Options;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.After;
@@ -24,9 +26,13 @@ public class UsingWireMock< C extends Closeable> {
 
     public C client;
 
+    protected FileSource fileRoot() {
+        return new SingleRootFileSource("src/test/resources");
+    }
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options()
             .dynamicPort()
+            .fileSource(fileRoot())
             .useChunkedTransferEncoding(Options.ChunkedEncodingPolicy.BODY_FILE)
     );
 
