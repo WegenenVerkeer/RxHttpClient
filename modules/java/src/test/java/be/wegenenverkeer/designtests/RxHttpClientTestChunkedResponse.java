@@ -2,6 +2,7 @@ package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.UsingWireMockRxJava;
 import be.wegenenverkeer.rxhttp.ClientRequest;
+import be.wegenenverkeer.rxhttp.ServerResponseElement;
 import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.common.SingleRootFileSource;
 import io.reactivex.rxjava3.core.Flowable;
@@ -57,7 +58,7 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMockRxJava {
                 get(urlPathEqualTo("/sse"))
                         .willReturn(aResponse()
                                 .withBodyFile(getNameOfGeneratedFile())
-                                .withChunkedDribbleDelay(300_000, 2000)
+                                .withChunkedDribbleDelay(300_000, 15_000)
                         )
         );
 
@@ -66,9 +67,10 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMockRxJava {
                 .setUrlRelativetoBase("/sse")
                 .build();
 
-        Flowable<String> flowable = client.executeObservably(request, (byte[]  bytes) -> new String(bytes, StandardCharsets.UTF_8));
+        Flowable<ServerResponseElement> flowable = client.executeObservably(request);
 
-        TestSubscriber<String> subscriber = flowable.test();
+        TestSubscriber<ServerResponseElement> subscriber = flowable.test();
+
         subscriber.awaitDone(getRequestTimeOut(), TimeUnit.MILLISECONDS);
 
         subscriber.assertComplete();

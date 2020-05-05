@@ -74,11 +74,18 @@ public class RxJavaHttpClient extends BaseRxHttpClient implements RxHttpClient {
      * @see Observable#defer
      */
     public Flowable<ServerResponseElement> executeObservably(ClientRequest request) {
-        return Flowable.defer(() -> {
-            BehaviorProcessor<ServerResponseElement> subject = BehaviorProcessor.create();
-            inner().executeRequest(request.unwrap(), new AsyncHandlerWrapper(subject));
-            return subject;
-        });
+        return Flowable.generate(
+                () -> {
+                    QueueingAsyncHandler handler = new QueueingAsyncHandler();
+                    inner().executeRequest(request.unwrap(), handler);
+                    return handler;
+                },
+                (handler, emitter) -> {
+                    handler.emitTo(emitter);
+                    return handler;
+                },
+                QueueingAsyncHandler::cancel
+        );
     }
 
     /**
