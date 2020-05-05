@@ -9,10 +9,9 @@ import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -29,35 +28,27 @@ import static org.junit.Assert.assertTrue;
 public class RxHttpClientTestChunkedResponse extends UsingWireMockRxJava {
 
     private final static int SIZE = 1_000_000;
-    static File tmp;
-    static File tmpDir;
+    private final File tmp;
 
-    static {
+    public RxHttpClientTestChunkedResponse(){
         //Generate a large test file to text chunked transfer encoding
-        try {
-            Path td = Files.createTempDirectory("wireMock");
-            Path files = Files.createDirectory(Path.of(td.toString(), "__files"));
-            Path outF = Files.createTempFile(files, "wm", ".bin");
+        tmp = generateWireMockTestFile(SIZE);
+    }
 
-            tmp = outF.toFile();
-            tmp.deleteOnExit();
-            tmpDir = td.toFile();
-            tmpDir.deleteOnExit();
 
-            try(Writer out = Files.newBufferedWriter(outF)) {
-                for(long i=0 ; i < SIZE; i++){
-                    out.write("Event in output nr. " + i + "\n");
-                }
-            }
+    @Override
+    protected int getRequestTimeOut(){
+        return 20_000;
+    }
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @Override
+    protected int getTimeOut(){
+        return getRequestTimeOut() + 10_000;
     }
 
     @Override
     protected FileSource fileRoot() {
-        return new SingleRootFileSource(tmpDir);
+        return new SingleRootFileSource(getWireMockRootDir());
     }
 
     @Test
@@ -65,7 +56,36 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMockRxJava {
         stubFor(
                 get(urlPathEqualTo("/sse"))
                         .willReturn(aResponse()
-                                .withBodyFile(tmp.getName())
+                                .withBodyFile(getNameOfGeneratedFile())
+                                .withChunkedDribbleDelay(300_000, 2000)
+                        )
+        );
+
+        ClientRequest request = client.requestBuilder()
+                .setMethod("GET")
+                .setUrlRelativetoBase("/sse")
+                .build();
+
+        Flowable<String> flowable = client.executeObservably(request, (byte[]  bytes) -> new String(bytes, StandardCharsets.UTF_8));
+
+        TestSubscriber<String> subscriber = flowable.test();
+        subscriber.awaitDone(getRequestTimeOut(), TimeUnit.MILLISECONDS);
+
+        subscriber.assertComplete();
+        subscriber.assertNoErrors();
+    }
+
+    private String getNameOfGeneratedFile() {
+        return tmp.getName();
+    }
+
+
+    @Test
+    public void testChunkedTransferWithDechunk() throws InterruptedException {
+        stubFor(
+                get(urlPathEqualTo("/sse"))
+                        .willReturn(aResponse()
+                                .withBodyFile(getNameOfGeneratedFile())
                                 .withChunkedDribbleDelay(300_000, 2000)
                         )
         );
@@ -80,9 +100,7 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMockRxJava {
         TestSubscriber<String> subscriber = flowable.test();
         subscriber.awaitDone(20_000, TimeUnit.MILLISECONDS);
 
-
         subscriber.assertValueCount(SIZE);
-
     }
 
 
@@ -112,7 +130,7 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMockRxJava {
 
     }
 
-    //TODO verify that cancellation works properly
+
     //TODO verify error handling
 
 

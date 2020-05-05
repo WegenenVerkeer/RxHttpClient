@@ -80,7 +80,7 @@ public class RxHttpClientMultipleRequests extends UsingWireMockRxJava {
         //verify behaviour
         TestSubscriber<String> sub = flowable.test();
 
-        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
 
         sub.assertNoErrors();
         sub.assertValues("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN");

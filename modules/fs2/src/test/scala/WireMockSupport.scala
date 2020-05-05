@@ -10,7 +10,7 @@ import org.specs2.specification.BeforeAfterEach
  */
 trait WireMockSupport extends BeforeAfterEach {
 
-  val REQUEST_TIME_OUT = 5000
+  val REQUEST_TIME_OUT = 200_000
   val DEFAULT_TIME_OUT: Int = REQUEST_TIME_OUT * 5
 
   val server: WireMockServer = new WireMockServer(options()

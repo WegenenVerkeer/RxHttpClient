@@ -47,7 +47,7 @@ public class JdkFlowApiTest extends UsingWireMockJdkFlow {
         //and back to RxJava to enable test (we basically test whether all this compiles anyway)
         FlowAdapters.toPublisher(publisher).subscribe(testSubscriber);
 
-        testSubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        testSubscriber.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
         testSubscriber.assertNoErrors();
         testSubscriber.assertValues(expectBody);
 

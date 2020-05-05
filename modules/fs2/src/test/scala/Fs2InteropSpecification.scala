@@ -49,6 +49,8 @@ class Fs2InteropSpecification extends org.specs2.mutable.Specification
     }
   }
 
+  "Respect "
+
   def stub(expectBody: String) = {
     import com.github.tomakehurst.wiremock.client.{WireMock => wm}
     server.stubFor(wm.get(wm.urlPathEqualTo("/contacts"))

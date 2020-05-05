@@ -49,7 +49,7 @@ public class RxHttpClientDesignTests extends UsingWireMockRxJava {
         Flowable<String> flowable = client.executeObservably(request, bytes -> new String(bytes, Charset.forName("UTF8")));
         TestSubscriber<String> sub = flowable.test();
 
-        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
         sub.assertValues(expectBody);
     }
@@ -77,7 +77,7 @@ public class RxHttpClientDesignTests extends UsingWireMockRxJava {
         Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
         TestSubscriber<String> sub = flowable.test();
 
-        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
         sub.assertValues(expectBody);
     }
@@ -111,7 +111,7 @@ public class RxHttpClientDesignTests extends UsingWireMockRxJava {
 
 
         TestSubscriber<String> sub = flowable.test();
-        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
         sub.assertValues(expectBody);
     }
@@ -143,7 +143,7 @@ public class RxHttpClientDesignTests extends UsingWireMockRxJava {
 
         Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
         TestSubscriber<String> sub = flowable.test();
-        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
 
         try {
@@ -177,7 +177,7 @@ public class RxHttpClientDesignTests extends UsingWireMockRxJava {
                 .build();
 
         Future<String> f = client.execute(request, ServerResponse::getResponseBody);
-        String result = f.get(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        String result = f.get(getTimeOut(), TimeUnit.MILLISECONDS);
         assertEquals(expectBody, result);
 
     }
@@ -193,7 +193,7 @@ public class RxHttpClientDesignTests extends UsingWireMockRxJava {
 
         TestSubscriber<String> sub = flowable.test();
 
-        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
         sub.assertError(t -> {
             if (t instanceof HttpClientError) {
                 return ((HttpClientError) t).getStatusCode() == 404;
@@ -220,7 +220,7 @@ public class RxHttpClientDesignTests extends UsingWireMockRxJava {
         Flowable<String> flowable = client.executeToCompletion(request, ServerResponse::getResponseBody);
         TestSubscriber<String> testsubscriber = flowable.test();
 
-        testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        testsubscriber.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
 
         testsubscriber.assertError(t -> {
             if (t instanceof HttpServerError) {

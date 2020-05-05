@@ -27,14 +27,14 @@ public class RxHttpClientPostTests extends UsingWireMockRxJava {
         String expectBody = "{ 'name': 'John Doe }";
         stubFor(post(urlPathEqualTo("/contacts/new"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT / 3)
+                .willReturn(aResponse().withFixedDelay(DEFAULT_REQUEST_TIME_OUT / 3)
                         .withStatus(201)
                         .withHeader("Content-Type", "application/json")
                         .withHeader("Location", "/contacts/123"))
         );
         stubFor(get(urlPathEqualTo("/contacts/123"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT / 3)
+                .willReturn(aResponse().withFixedDelay(DEFAULT_REQUEST_TIME_OUT / 3)
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(expectBody))
@@ -59,7 +59,7 @@ public class RxHttpClientPostTests extends UsingWireMockRxJava {
 
         TestSubscriber<String> sub = flowable.test();
 
-        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
         sub.assertNoErrors();
         sub.assertValues(expectBody);
 
@@ -71,7 +71,7 @@ public class RxHttpClientPostTests extends UsingWireMockRxJava {
         String expectFailedBody = "{ \"message\": \"unauthorized\" }";
         stubFor(post(urlPathEqualTo("/contacts/new"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT / 3)
+                .willReturn(aResponse().withFixedDelay(DEFAULT_REQUEST_TIME_OUT / 3)
                         .withStatus(403)
                         .withHeader("Content-Type", "application/json")
                         .withBody(expectFailedBody))
@@ -88,7 +88,7 @@ public class RxHttpClientPostTests extends UsingWireMockRxJava {
 
         TestSubscriber<String> sub = flowable.test();
 
-        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        sub.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
 
         sub.assertError(t -> {
             if (t instanceof HttpClientError) {

@@ -1,7 +1,6 @@
 package be.wegenenverkeer;
 
 import be.wegenenverkeer.rxhttp.Builder;
-import be.wegenenverkeer.rxhttp.RxHttpClient;
 import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.common.SingleRootFileSource;
 import com.github.tomakehurst.wiremock.core.Options;
@@ -12,7 +11,11 @@ import org.junit.Rule;
 
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
@@ -21,14 +24,44 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
  */
 public class UsingWireMock< C extends Closeable> {
 
-    public final int REQUEST_TIME_OUT = 5000;
-    public final int DEFAULT_TIME_OUT = REQUEST_TIME_OUT * 5;
+    public final static int DEFAULT_REQUEST_TIME_OUT = 5000;
 
     public C client;
+
+    private static File wireMockRootDir;
+
+    private static void createTemporaryRoot() throws IOException {
+        Path td = Files.createTempDirectory("wireMock");
+        Path files = Files.createDirectory(Path.of(td.toString(), "__files"));
+        wireMockRootDir = td.toFile();
+        wireMockRootDir.deleteOnExit();
+        files.toFile().deleteOnExit();
+    }
+
+    static {
+        try {
+            createTemporaryRoot();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected File getWireMockRootDir(){
+        return wireMockRootDir;
+    }
 
     protected FileSource fileRoot() {
         return new SingleRootFileSource("src/test/resources");
     }
+
+    protected int getRequestTimeOut(){
+        return DEFAULT_REQUEST_TIME_OUT;
+    }
+
+    protected int getTimeOut() {
+        return DEFAULT_REQUEST_TIME_OUT * 5;
+    }
+
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options()
             .dynamicPort()
@@ -44,7 +77,7 @@ public class UsingWireMock< C extends Closeable> {
     @Before
     public void setUpAndStartServer() {
         client = getBuilder()
-                .setRequestTimeout(REQUEST_TIME_OUT)
+                .setRequestTimeout(getRequestTimeOut())
                 .setMaxConnections(3)
                 .setAccept("application/json")
                 .setBaseUrl("http://localhost:" + port())
@@ -60,6 +93,28 @@ public class UsingWireMock< C extends Closeable> {
         }
     }
 
+
     public Builder<C, ?> getBuilder() { return null;}
+
+    protected File generateWireMockTestFile(long size) {
+        try {
+
+            Path files = Path.of(getWireMockRootDir().toString(), "__files");
+            Path outF = Files.createTempFile(files, "wm", ".bin");
+
+            File tmp = outF.toFile();
+            tmp.deleteOnExit();
+
+            try(Writer out = Files.newBufferedWriter(outF)) {
+                for(long i=0 ; i < size; i++){
+                    out.write("Event in output nr. " + i + "\n");
+                }
+            }
+
+            return tmp;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }

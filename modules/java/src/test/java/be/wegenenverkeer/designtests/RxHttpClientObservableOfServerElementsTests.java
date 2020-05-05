@@ -47,7 +47,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMockRx
 
         TestSubscriber<ServerResponseElement> sub = flowable.test();
 
-        sub.awaitDone(DEFAULT_TIME_OUT, TimeUnit.HOURS);
+        sub.awaitDone(getTimeOut(), TimeUnit.HOURS);
         sub.assertNoErrors();
         sub.assertComplete();
 
@@ -81,7 +81,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMockRx
 
         TestSubscriber<ServerResponseElement> testsubscriber = flowable.test();
 
-        testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        testsubscriber.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
 
         testsubscriber.assertError(t -> {
             if (t instanceof HttpClientError) {
@@ -111,7 +111,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMockRx
 
         TestSubscriber<ServerResponseElement> testsubscriber = flowable.test();
 
-        testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        testsubscriber.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
 
         testsubscriber.assertError(t -> {
             if (t instanceof HttpServerError) {
@@ -128,7 +128,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMockRx
         //set up stub
         stubFor(get(urlEqualTo("/contacts"))
                 .withHeader("Accept", equalTo("application/json"))
-                .willReturn(aResponse().withFixedDelay(REQUEST_TIME_OUT * 2)
+                .willReturn(aResponse().withFixedDelay(DEFAULT_REQUEST_TIME_OUT * 2)
                         .withStatus(200)));
 
         //set up use case
@@ -139,7 +139,7 @@ public class RxHttpClientObservableOfServerElementsTests extends UsingWireMockRx
 
         TestSubscriber<ServerResponseElement> testsubscriber = flowable.test();
 
-        testsubscriber.awaitDone(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS);
+        testsubscriber.awaitDone(getTimeOut(), TimeUnit.MILLISECONDS);
 
         testsubscriber.assertError(TimeoutException.class);
 
