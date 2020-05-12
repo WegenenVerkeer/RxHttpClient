@@ -10,7 +10,8 @@ val ScalaBuildOptions = Seq("-unchecked",
                             "-language:reflectiveCalls",
                             "-language:implicitConversions",
                             "-language:postfixOps",
-                            "-language:higherKinds")
+                            "-language:higherKinds",
+                            "-target:jvm-1.8")
 
 
 val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.12.1"
@@ -80,6 +81,12 @@ lazy val disablePublishingRoot = Seq(
 
 addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 
+lazy val supportedScalaVersions = Seq("2.12.2", "2.13.0")
+
+lazy val extraScalaSettings = Seq(
+  crossScalaVersions := supportedScalaVersions
+)
+
 lazy val moduleSettings =
   Seq(
     organization := "be.wegenenverkeer",
@@ -96,9 +103,10 @@ lazy val moduleSettings =
 
 lazy val extraJavaSettings = Seq(
   crossPaths := false,
+  crossScalaVersions := List("2.12.2"),
   autoScalaLibrary := false,
   libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
-  //    javacOptions ++= Seq("-Xlint:deprecation"),
+  javacOptions ++= Seq("--release", "11"),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
 )
 
@@ -109,21 +117,19 @@ lazy val testSettings = Seq(
 lazy val javaInterop = (project in file("modules/java-interop")).settings(
   name := "RxHttpClient-interop",
   moduleSettings ++ extraJavaSettings,
-  javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies ++ interopDependencies,
   extraJavaSettings
 ) dependsOn (java % "compile->compile;test->test")
 
 lazy val fs2 = (project in  file("modules/fs2")).settings(
   name := "RxHttpclient-fs2",
-  moduleSettings,
+  moduleSettings ++ extraScalaSettings,
   libraryDependencies ++= fs2Dependencies
 ).dependsOn(java % "compile->compile;test->test")
 
 lazy val java = (project in file("modules/java")).settings(
   name := "RxHttpClient",
   moduleSettings,
-  javacOptions ++= Seq("--release", "11"),
   libraryDependencies ++= javaDependencies ++ rxJavaDependencies,
   extraJavaSettings
 )
@@ -131,6 +137,7 @@ lazy val java = (project in file("modules/java")).settings(
 lazy val main = (project in file("."))
   .settings(
     moduleSettings ++ disablePublishingRoot ++ extraJavaSettings,
+    crossScalaVersions := Nil,
     name := "RxHttpClient"
   )
   .aggregate(javaInterop, java, fs2)
