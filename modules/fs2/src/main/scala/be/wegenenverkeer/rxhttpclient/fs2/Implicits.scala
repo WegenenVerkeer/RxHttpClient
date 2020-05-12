@@ -9,7 +9,7 @@ import be.wegenenverkeer.rxhttpclient.rxjava.RxJavaHttpClient
 object Implicits {
 
   implicit class RxJavaHttpClientOps(client: RxJavaHttpClient) {
-    def fs2HttpApi: Fs2HttpApi = new Fs2HtttpClient(client)
+    def fs2HttpApi: Fs2HttpApi = new Fs2HttpClient(client)
   }
 }
 

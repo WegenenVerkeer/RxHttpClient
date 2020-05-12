@@ -15,7 +15,7 @@ import scala.util.Try
 /**
  * Created by Karel Maesen, Geovise BVBA on 20/04/2020.
  */
-case class Fs2HtttpClient(client: RxJavaHttpClient) extends Fs2HttpApi {
+case class Fs2HttpClient(client: RxJavaHttpClient) extends Fs2HttpApi {
 
   def stream[F[_] : ConcurrentEffect](request: ClientRequest): Stream[F, ServerResponseElement] =
     fromPublisher[F, ServerResponseElement](client.executeObservably(request))
