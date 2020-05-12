@@ -1,8 +1,8 @@
 package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.UsingWireMockRxJava;
-import be.wegenenverkeer.rxhttp.ClientRequest;
-import be.wegenenverkeer.rxhttp.ServerResponseElement;
+import be.wegenenverkeer.rxhttpclient.ClientRequest;
+import be.wegenenverkeer.rxhttpclient.ServerResponseElement;
 import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.common.SingleRootFileSource;
 import io.reactivex.rxjava3.core.Flowable;
@@ -10,9 +10,6 @@ import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;

@@ -1,7 +1,7 @@
 package be.wegenenverkeer;
 
-import be.wegenenverkeer.rxhttp.Builder;
-import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
+import be.wegenenverkeer.rxhttpclient.Builder;
+import be.wegenenverkeer.rxhttpclient.rxjava.RxJavaHttpClient;
 
 /**
  * Created by Karel Maesen, Geovise BVBA on 19/12/14.

@@ -1,4 +1,4 @@
-import be.wegenenverkeer.rxhttp.fs2.Implicits._
+import be.wegenenverkeer.rxhttpclient.fs2.Implicits._
 import cats.effect.{ContextShift, IO}
 import scala.concurrent.ExecutionContext
 

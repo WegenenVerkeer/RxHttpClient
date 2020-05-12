@@ -1,4 +1,4 @@
-import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient
+import be.wegenenverkeer.rxhttpclient.rxjava.RxJavaHttpClient
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.Options
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._

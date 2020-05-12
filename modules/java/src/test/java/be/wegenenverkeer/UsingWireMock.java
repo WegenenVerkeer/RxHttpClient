@@ -1,6 +1,6 @@
 package be.wegenenverkeer;
 
-import be.wegenenverkeer.rxhttp.Builder;
+import be.wegenenverkeer.rxhttpclient.Builder;
 import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.common.SingleRootFileSource;
 import com.github.tomakehurst.wiremock.core.Options;

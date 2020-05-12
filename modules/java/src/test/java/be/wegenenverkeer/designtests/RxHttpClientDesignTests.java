@@ -1,11 +1,11 @@
 package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.UsingWireMockRxJava;
-import be.wegenenverkeer.rxhttp.ClientRequest;
-import be.wegenenverkeer.rxhttp.HttpClientError;
-import be.wegenenverkeer.rxhttp.HttpServerError;
-import be.wegenenverkeer.rxhttp.ServerResponse;
-import be.wegenenverkeer.rxhttp.rxjava.RxJavaHttpClient;
+import be.wegenenverkeer.rxhttpclient.ClientRequest;
+import be.wegenenverkeer.rxhttpclient.HttpClientError;
+import be.wegenenverkeer.rxhttpclient.HttpServerError;
+import be.wegenenverkeer.rxhttpclient.ServerResponse;
+import be.wegenenverkeer.rxhttpclient.rxjava.RxJavaHttpClient;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;

@@ -1,8 +1,8 @@
 package be.wegenenverkeer.designtests;
 
 import be.wegenenverkeer.UsingWireMockRxJava;
-import be.wegenenverkeer.rxhttp.ClientRequest;
-import be.wegenenverkeer.rxhttp.ServerResponse;
+import be.wegenenverkeer.rxhttpclient.ClientRequest;
+import be.wegenenverkeer.rxhttpclient.ServerResponse;
 import com.jayway.jsonpath.JsonPath;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;

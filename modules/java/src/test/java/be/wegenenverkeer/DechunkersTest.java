@@ -1,6 +1,6 @@
 package be.wegenenverkeer;
 
-import be.wegenenverkeer.rxhttp.rxjava.Dechunker;
+import be.wegenenverkeer.rxhttpclient.rxjava.Dechunker;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;

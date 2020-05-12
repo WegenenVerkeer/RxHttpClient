@@ -1,7 +1,7 @@
 package be.wegenenverkeer.reactivestreams.client;
 
 
-import be.wegenenverkeer.rxhttp.ClientRequest;
+import be.wegenenverkeer.rxhttpclient.ClientRequest;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;
 import org.reactivestreams.FlowAdapters;

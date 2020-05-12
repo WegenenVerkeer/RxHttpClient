@@ -1,6 +1,6 @@
 package be.wegenenverkeer.reactor.client;
 
-import be.wegenenverkeer.rxhttp.ClientRequest;
+import be.wegenenverkeer.rxhttpclient.ClientRequest;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
