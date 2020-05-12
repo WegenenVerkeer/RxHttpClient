@@ -29,6 +29,9 @@ case class Fs2HtttpClient(client: RxJavaHttpClient) extends Fs2HttpApi {
   def stream[F[_] : ConcurrentEffect, A](req: ClientRequest, transform: Array[Byte] => A): Stream[F, A] =
     fromPublisher[F, A](client.executeObservably(req, (t: Array[Byte]) => transform(t)))
 
+  def stream[F[_] : ConcurrentEffect](req: ClientRequest): Stream[F, Array[Byte]] =
+    stream[F, Array[Byte]](req, identity)
+
   def execute[F[_] : Async, A](req: ClientRequest, tr: ServerResponse => A): F[A] = {
     def attemptTransform(resp: Response): Either[Throwable, A] =
       Try {
