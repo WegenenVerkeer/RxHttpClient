@@ -177,13 +177,8 @@ val publishSettings = Seq(
   pomIncludeRepository := { _ =>
     false
   },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
+  sonatypeProfileName := "be.wegenenverkeer",
+  publishTo := sonatypePublishToBundle.value,
   pomExtra := pomInfo,
   credentials ++= publishingCredentials
 )
