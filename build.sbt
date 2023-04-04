@@ -17,8 +17,8 @@ val ScalaBuildOptions = Seq("-unchecked",
 val asyncClient = "org.asynchttpclient" % "async-http-client" % "2.12.1"
 
 val rxStreamsVersion = "1.0.3"
-val rxJavaVersion = "3.0.1"
-val reactorVersion = "3.3.3.RELEASE"
+val rxJavaVersion = "3.1.5"
+val reactorVersion = "3.4.9"
 val fs2Version = "2.2.2"
 
 val slf4j = "org.slf4j" % "slf4j-api" % "1.7.30"
