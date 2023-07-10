@@ -99,6 +99,8 @@ public class RxHttpClientTestChunkedResponse extends UsingWireMockRxJava {
         TestSubscriber<String> subscriber = flowable.test();
         subscriber.awaitDone(20_000, TimeUnit.MILLISECONDS);
 
+        subscriber.assertComplete();
+        subscriber.assertNoErrors();
         subscriber.assertValueCount(SIZE);
     }
 
