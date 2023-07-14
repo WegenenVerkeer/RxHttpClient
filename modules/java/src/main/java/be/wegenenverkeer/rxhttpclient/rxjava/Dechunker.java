@@ -65,6 +65,7 @@ public class Dechunker implements FlowableOperator<String, String> {
             if (!previous.isEmpty()) {
                 child.onNext(previous);
             }
+            child.onComplete();
         }
 
         @Override
