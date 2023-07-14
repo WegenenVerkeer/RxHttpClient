@@ -1,6 +1,6 @@
 val Organization = "be.wegenenverkeer"
 
-val Version = "2.0"
+val Version = "2.1-SNAPSHOT"
 
 val ScalaVersion = "2.13.0"
 
@@ -166,7 +166,6 @@ val publishingCredentials = (for {
   username <- Option(System.getenv().get("SONATYPE_USERNAME"))
   password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
 } yield {
-  println(s"username: $username; passwd: $password")
   Seq(
     Credentials("Sonatype Nexus Repository Manager",
       "oss.sonatype.org",

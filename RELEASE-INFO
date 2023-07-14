@@ -1,0 +1,10 @@
+Release steps:
+===============
+
+1. Define appropriate SONATYPE_PASSWORD and SONATYPE_USERNAME environment variables.
+
+2. execute: 
+	$ sbt publishSigned
+	$ sbt sonatypeBundleRelease
+
+See https://github.com/xerial/sbt-sonatype for more information.
