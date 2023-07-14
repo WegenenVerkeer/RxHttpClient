@@ -1,6 +1,6 @@
 val Organization = "be.wegenenverkeer"
 
-val Version = "2.0-RC2"
+val Version = "2.0"
 
 val ScalaVersion = "2.13.0"
 
@@ -165,25 +165,21 @@ lazy val pomInfo = <url>https://github.com/WegenenVerkeer/atomium</url>
 val publishingCredentials = (for {
   username <- Option(System.getenv().get("SONATYPE_USERNAME"))
   password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-} yield
+} yield {
+  println(s"username: $username; passwd: $password")
   Seq(
     Credentials("Sonatype Nexus Repository Manager",
       "oss.sonatype.org",
       username,
-      password))).getOrElse(Seq())
+      password))
+}).getOrElse(Seq())
 
 val publishSettings = Seq(
   publishMavenStyle := true,
   pomIncludeRepository := { _ =>
     false
   },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
+  publishTo := sonatypePublishToBundle.value,
   pomExtra := pomInfo,
   credentials ++= publishingCredentials
 )

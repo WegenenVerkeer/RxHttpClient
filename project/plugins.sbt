@@ -7,4 +7,4 @@ addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "1.5.1")
 
 // supports release in maven central
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.4")
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.1")
+addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.1.2")
