@@ -4,6 +4,7 @@ import be.wegenenverkeer.rxhttpclient.*;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.processors.AsyncProcessor;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.asynchttpclient.AsyncHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ public class RxJavaHttpClient extends BaseRxHttpClient implements RxHttpClient {
             AsyncProcessor<F> subject = AsyncProcessor.create();
             inner().executeRequest(request.unwrap(), new AsyncCompletionHandlerWrapper<>(subject, transformer));
             return subject;
-        });
+        }).subscribeOn(Schedulers.io());
     }
 
     /**
